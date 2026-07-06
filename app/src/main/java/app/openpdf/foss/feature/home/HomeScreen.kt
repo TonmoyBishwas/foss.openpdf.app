@@ -4,8 +4,11 @@ import android.net.Uri
 import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,6 +103,51 @@ fun HomeScreen(
         }
     }
 
+    // --- Create flows ---
+    var showCreateMenu by remember { mutableStateOf(false) }
+    var showTextDialog by remember { mutableStateOf(false) }
+    var showScanSheet by remember { mutableStateOf(false) }
+    var pendingScanFile by remember { mutableStateOf<java.io.File?>(null) }
+
+    val imagesTargetLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target ->
+        if (target != null) viewModel.createImagesInto(target) else viewModel.dismissTool()
+        showScanSheet = false
+    }
+    val imagesPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.onImagesPicked(uris)
+            imagesTargetLauncher.launch("images.pdf")
+        }
+    }
+    val textTargetLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target ->
+        if (target != null) viewModel.createTextInto(target) else viewModel.dismissTool()
+    }
+    val context = LocalContext.current
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { captured ->
+        val file = pendingScanFile
+        if (captured && file != null && file.exists()) {
+            viewModel.onScanCaptured(file.absolutePath)
+        }
+        pendingScanFile = null
+    }
+
+    fun captureScanPage() {
+        val file = viewModel.newScanTarget()
+        pendingScanFile = file
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context, "app.openpdf.foss.fileprovider", file,
+        )
+        takePictureLauncher.launch(uri)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -135,6 +184,7 @@ fun HomeScreen(
                 enabled = !toolState.busy,
                 onMerge = { mergeSourcesLauncher.launch(arrayOf("application/pdf")) },
                 onSplit = { splitSourceLauncher.launch(arrayOf("application/pdf")) },
+                onCreate = { showCreateMenu = true },
             )
             if (recents.isEmpty()) {
                 EmptyState(modifier = Modifier.fillMaxSize())
@@ -158,6 +208,90 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    if (showCreateMenu) {
+        AlertDialog(
+            onDismissRequest = { showCreateMenu = false },
+            title = { Text(stringResource(R.string.create_title)) },
+            text = {
+                Column {
+                    CreateOption(stringResource(R.string.create_from_images)) {
+                        showCreateMenu = false
+                        imagesPickerLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
+                        )
+                    }
+                    CreateOption(stringResource(R.string.create_scan)) {
+                        showCreateMenu = false
+                        viewModel.clearScan()
+                        showScanSheet = true
+                        captureScanPage()
+                    }
+                    CreateOption(stringResource(R.string.create_from_text)) {
+                        showCreateMenu = false
+                        showTextDialog = true
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showCreateMenu = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showTextDialog) {
+        TextToPdfDialog(
+            onConfirm = { text ->
+                showTextDialog = false
+                viewModel.onTextEntered(text)
+                textTargetLauncher.launch("text.pdf")
+            },
+            onDismiss = { showTextDialog = false },
+        )
+    }
+
+    if (showScanSheet && toolState.scanPages.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = {
+                Text(
+                    stringResource(R.string.scan_pages_so_far, toolState.scanPages.size)
+                )
+            },
+            text = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Checkbox(
+                        checked = toolState.blackAndWhite,
+                        onCheckedChange = viewModel::setBlackAndWhite,
+                    )
+                    Text(stringResource(R.string.scan_black_white))
+                }
+            },
+            confirmButton = {
+                Row {
+                    TextButton(onClick = { captureScanPage() }) {
+                        Text(stringResource(R.string.scan_add_page))
+                    }
+                    TextButton(onClick = { imagesTargetLauncher.launch("scan.pdf") }) {
+                        Text(stringResource(R.string.scan_done))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showScanSheet = false
+                        viewModel.clearScan()
+                    },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
     }
 
     // Split: ranges dialog once the source's page count is known.
@@ -190,13 +324,22 @@ private fun ToolsRow(
     enabled: Boolean,
     onMerge: () -> Unit,
     onSplit: () -> Unit,
+    onCreate: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = Spacing.screenEdge, vertical = Spacing.sm),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        OutlinedButton(onClick = onCreate, enabled = enabled) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Text(
+                stringResource(R.string.create_title),
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
+        }
         OutlinedButton(onClick = onMerge, enabled = enabled) {
             Icon(Icons.Default.CallMerge, contentDescription = null)
             Text(
@@ -212,6 +355,46 @@ private fun ToolsRow(
             )
         }
     }
+}
+
+@Composable
+private fun CreateOption(label: String, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = Spacing.md),
+    )
+}
+
+@Composable
+private fun TextToPdfDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.create_from_text)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(stringResource(R.string.create_text_label)) },
+                minLines = 5,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) {
+                Text(stringResource(R.string.action_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

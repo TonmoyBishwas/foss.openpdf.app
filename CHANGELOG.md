@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.0
+
+- Create PDFs, fully offline: from gallery images, from camera scans
+  (multi-page, optional black & white filter), or from typed text
+- Camera scanning needs no camera permission — it uses your camera app
+- EXIF-aware image rotation and memory-bounded decoding for large photos
+
 ## v0.5.0
 
 - Organize pages: thumbnail grid with multi-select — rotate, duplicate,

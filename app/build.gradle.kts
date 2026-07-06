@@ -17,8 +17,8 @@ android {
         applicationId = "app.openpdf.foss"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.5.0"
+        versionCode = 7
+        versionName = "0.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -99,6 +99,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.mupdf.fitz)
+    implementation(libs.pdfbox.android)
+    implementation(libs.androidx.exifinterface)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

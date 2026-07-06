@@ -2,4 +2,5 @@
 <paths>
     <cache-path name="open" path="open/" />
     <cache-path name="exports" path="exports/" />
+    <cache-path name="scans" path="scans/" />
 </paths>

@@ -69,6 +69,15 @@
     <string name="organize_move_hint">Tap where the page should go</string>
     <string name="tool_merge">Merge PDFs</string>
     <string name="tool_split">Split PDF</string>
+    <string name="create_title">Create PDF</string>
+    <string name="create_from_images">From images</string>
+    <string name="create_scan">Scan with camera</string>
+    <string name="create_from_text">From text</string>
+    <string name="create_text_label">Text content</string>
+    <string name="scan_pages_so_far">%1$d page(s) captured</string>
+    <string name="scan_black_white">Black &amp; white</string>
+    <string name="scan_add_page">Add page</string>
+    <string name="scan_done">Create PDF</string>
     <string name="split_dialog_title">Extract pages</string>
     <string name="split_dialog_hint">Document has %1$d pages. Enter pages like 1-3, 7, 9-12.</string>
     <string name="split_dialog_label">Pages</string>
