@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.0
+
+- Password protect: save an AES-256 encrypted copy of any document
+- Remove password from encrypted documents (once opened with the password)
+- Document info: view and edit title, author, subject, and keywords
+- Fixed save verification for encrypted output
+
 ## v0.6.0
 
 - Create PDFs, fully offline: from gallery images, from camera scans

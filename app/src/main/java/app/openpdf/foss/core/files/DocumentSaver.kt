@@ -40,9 +40,13 @@ class DocumentSaver @Inject constructor(
             try {
                 producer(temp.absolutePath)
 
-                // Corruption guard: the temp file must round-trip.
+                // Corruption guard: the temp file must round-trip. A password
+                // challenge means the file parsed fine and is encrypted —
+                // exactly what a protect-save produces.
                 try {
                     engine.open(temp.absolutePath).close()
+                } catch (_: app.openpdf.foss.core.pdf.PdfPasswordRequiredException) {
+                    // Valid encrypted output.
                 } catch (e: Exception) {
                     throw SaveFailedException("Saved file failed verification", e)
                 }
