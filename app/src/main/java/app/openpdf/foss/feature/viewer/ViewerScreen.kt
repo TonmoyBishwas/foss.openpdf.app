@@ -105,6 +105,10 @@ fun ViewerScreen(
     var showMenu by remember { mutableStateOf(false) }
     var jumpToPage by remember { mutableStateOf<Int?>(null) }
     var notePlacement by remember { mutableStateOf<Triple<Int, Float, Float>?>(null) }
+    var textPlacement by remember { mutableStateOf<Triple<Int, Float, Float>?>(null) }
+    var showSignaturePad by remember { mutableStateOf(false) }
+    var formFieldEditing by remember { mutableStateOf<app.openpdf.foss.core.pdf.model.FormField?>(null) }
+    val formFields by viewModel.formFields.collectAsStateWithLifecycle()
 
     val saveAsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
@@ -179,8 +183,16 @@ fun ViewerScreen(
             if (annotationState.toolbarVisible && uiState is ViewerUiState.Ready) {
                 AnnotationToolbar(
                     state = annotationState,
-                    onToolSelected = viewModel::setAnnotationTool,
+                    onToolSelected = { tool ->
+                        if (tool == AnnotationTool.SIGN &&
+                            annotationState.tool != AnnotationTool.SIGN
+                        ) {
+                            showSignaturePad = true
+                        }
+                        viewModel.setAnnotationTool(tool)
+                    },
                     onColorSelected = viewModel::setInkColor,
+                    onShapeSelected = viewModel::setShapeType,
                     onSave = { requestSave() },
                     onClose = { viewModel.setAnnotationToolbarVisible(false) },
                 )
@@ -253,6 +265,8 @@ fun ViewerScreen(
                                         annotationState.tool == AnnotationTool.ERASE &&
                                         page == state.currentPage
                                     ) pageAnnotations.flatMap { it.rects } else emptyList(),
+                                    formFieldRects = if (page == state.currentPage)
+                                        formFields.map { it.rect } else emptyList(),
                                 )
                             },
                             onSelectText = viewModel::selectText,
@@ -260,13 +274,36 @@ fun ViewerScreen(
                             onPageTap = { page, x, y ->
                                 when (annotationState.tool) {
                                     AnnotationTool.NOTE -> notePlacement = Triple(page, x, y)
+                                    AnnotationTool.TEXT -> textPlacement = Triple(page, x, y)
+                                    AnnotationTool.SIGN -> viewModel.placeSignature(page, x, y)
                                     AnnotationTool.ERASE -> viewModel.eraseAnnotationAt(page, x, y)
+                                    AnnotationTool.NONE -> {
+                                        val field = viewModel.formFieldAt(page, x, y)
+                                        if (field != null) {
+                                            when (field.type) {
+                                                app.openpdf.foss.core.pdf.model.FormFieldType.CHECKBOX,
+                                                app.openpdf.foss.core.pdf.model.FormFieldType.RADIO ->
+                                                    viewModel.toggleFormField(field)
+
+                                                app.openpdf.foss.core.pdf.model.FormFieldType.TEXT,
+                                                app.openpdf.foss.core.pdf.model.FormFieldType.COMBO,
+                                                app.openpdf.foss.core.pdf.model.FormFieldType.LIST ->
+                                                    formFieldEditing = field
+
+                                                else -> Unit
+                                            }
+                                        } else {
+                                            viewModel.clearSelection()
+                                        }
+                                    }
+
                                     else -> Unit
                                 }
                             },
                             onInkStroke = { page, stroke ->
                                 viewModel.addInk(page, listOf(stroke))
                             },
+                            onShapeDrawn = viewModel::addShape,
                             jumpToPage = jumpToPage,
                             onJumpHandled = { jumpToPage = null },
                         )
@@ -279,6 +316,37 @@ fun ViewerScreen(
                                 notePlacement = null
                             },
                             onDismiss = { notePlacement = null },
+                        )
+                    }
+
+                    textPlacement?.let { (page, x, y) ->
+                        NoteDialog(
+                            onConfirm = { text ->
+                                viewModel.addFreeText(page, x, y, text)
+                                textPlacement = null
+                            },
+                            onDismiss = { textPlacement = null },
+                        )
+                    }
+
+                    if (showSignaturePad) {
+                        SignaturePadDialog(
+                            onConfirm = { strokes ->
+                                viewModel.setSignature(strokes)
+                                showSignaturePad = false
+                            },
+                            onDismiss = { showSignaturePad = false },
+                        )
+                    }
+
+                    formFieldEditing?.let { field ->
+                        FormFieldDialog(
+                            field = field,
+                            onConfirm = { value ->
+                                viewModel.setFormValue(field, value)
+                                formFieldEditing = null
+                            },
+                            onDismiss = { formFieldEditing = null },
                         )
                     }
 
@@ -597,6 +665,51 @@ private fun printDocument(context: Context, viewModel: ViewerViewModel) {
     val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
     val name = file.name.ifBlank { "document.pdf" }
     printManager.print(name, PdfPrintAdapter(file, name), null)
+}
+
+@Composable
+private fun FormFieldDialog(
+    field: app.openpdf.foss.core.pdf.model.FormField,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by rememberSaveable { mutableStateOf(field.value) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.form_field_title)) },
+        text = {
+            if (field.options.isNotEmpty()) {
+                Column {
+                    field.options.forEach { option ->
+                        Text(
+                            text = option,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (option == value) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { value = option }
+                                .padding(vertical = Spacing.sm),
+                        )
+                    }
+                }
+            } else {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    label = { Text(stringResource(R.string.form_field_value)) },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(value) }) {
+                Text(stringResource(R.string.action_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

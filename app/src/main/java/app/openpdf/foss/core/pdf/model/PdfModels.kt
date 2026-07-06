@@ -48,3 +48,18 @@ data class PageAnnotation(
 
 /** One freehand stroke in normalized page coordinates. */
 data class InkStroke(val points: List<Pair<Float, Float>>)
+
+/** Shape annotation kinds. */
+enum class ShapeType { RECTANGLE, ELLIPSE, LINE }
+
+/** Interactive form field kinds. */
+enum class FormFieldType { TEXT, CHECKBOX, RADIO, COMBO, LIST, SIGNATURE, BUTTON, UNKNOWN }
+
+/** One AcroForm field (widget) on a page. */
+data class FormField(
+    val index: Int,
+    val type: FormFieldType,
+    val rect: NormalizedRect,
+    val value: String,
+    val options: List<String> = emptyList(),
+)

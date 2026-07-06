@@ -3,10 +3,12 @@ package app.openpdf.foss.core.pdf
 import android.graphics.Bitmap
 import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
+import app.openpdf.foss.core.pdf.model.FormField
 import app.openpdf.foss.core.pdf.model.InkStroke
 import app.openpdf.foss.core.pdf.model.MarkupType
 import app.openpdf.foss.core.pdf.model.NormalizedRect
 import app.openpdf.foss.core.pdf.model.PageAnnotation
+import app.openpdf.foss.core.pdf.model.ShapeType
 import app.openpdf.foss.core.pdf.model.SearchHit
 import app.openpdf.foss.core.pdf.model.TextSelection
 
@@ -89,6 +91,21 @@ interface PdfDocumentSession : AutoCloseable {
 
     /** Deletes the annotation at [annotIndex] (from [annotations]). */
     suspend fun deleteAnnotation(pageIndex: Int, annotIndex: Int)
+
+    /** Adds a free-text box inside [rect]. */
+    suspend fun addFreeText(pageIndex: Int, rect: NormalizedRect, text: String, fontSize: Float, argb: Long)
+
+    /** Adds a rectangle/ellipse/line shape spanning [rect]. */
+    suspend fun addShape(pageIndex: Int, type: ShapeType, rect: NormalizedRect, argb: Long, strokeWidth: Float)
+
+    /** Interactive form fields (widgets) on the page. */
+    suspend fun formFields(pageIndex: Int): List<FormField>
+
+    /** Sets a text/combo field's value. @return false when rejected. */
+    suspend fun setFormFieldValue(pageIndex: Int, fieldIndex: Int, value: String): Boolean
+
+    /** Toggles a checkbox/radio widget. */
+    suspend fun toggleFormField(pageIndex: Int, fieldIndex: Int)
 
     /** Writes the current document state (including edits) to [filePath]. */
     suspend fun saveTo(filePath: String)

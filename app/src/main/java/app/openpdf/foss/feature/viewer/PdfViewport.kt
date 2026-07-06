@@ -83,6 +83,7 @@ data class PageOverlays(
     val inkStrokes: List<app.openpdf.foss.core.pdf.model.InkStroke> = emptyList(),
     val inkColor: Long = 0xFF2C3E50L,
     val annotationOutlines: List<NormalizedRect> = emptyList(),
+    val formFieldRects: List<NormalizedRect> = emptyList(),
 )
 
 @Composable
@@ -101,6 +102,7 @@ fun PdfViewport(
     onClearSelection: () -> Unit = {},
     onPageTap: (page: Int, x: Float, y: Float) -> Unit = { _, _, _ -> },
     onInkStroke: (page: Int, stroke: app.openpdf.foss.core.pdf.model.InkStroke) -> Unit = { _, _ -> },
+    onShapeDrawn: (page: Int, rect: NormalizedRect) -> Unit = { _, _ -> },
     jumpToPage: Int? = null,
     onJumpHandled: () -> Unit = {},
 ) {
@@ -114,14 +116,14 @@ fun PdfViewport(
         ViewMode.VERTICAL -> VerticalViewport(
             session, pageSizes, initialPage, onPageChanged, modifier,
             colorFilter, docVersion, annotationTool, overlaysForPage,
-            onSelectText, onClearSelection, onPageTap, onInkStroke,
+            onSelectText, onClearSelection, onPageTap, onInkStroke, onShapeDrawn,
             jumpToPage, onJumpHandled,
         )
 
         ViewMode.HORIZONTAL -> HorizontalViewport(
             session, pageSizes, initialPage, onPageChanged, modifier,
             colorFilter, docVersion, annotationTool, overlaysForPage,
-            onSelectText, onClearSelection, onPageTap, onInkStroke,
+            onSelectText, onClearSelection, onPageTap, onInkStroke, onShapeDrawn,
             jumpToPage, onJumpHandled,
         )
     }
@@ -142,6 +144,7 @@ private fun VerticalViewport(
     onClearSelection: () -> Unit,
     onPageTap: (Int, Float, Float) -> Unit,
     onInkStroke: (Int, app.openpdf.foss.core.pdf.model.InkStroke) -> Unit,
+    onShapeDrawn: (Int, NormalizedRect) -> Unit,
     jumpToPage: Int?,
     onJumpHandled: () -> Unit,
 ) {
@@ -198,6 +201,7 @@ private fun VerticalViewport(
                         onSelectText = onSelectText,
                         onPageTap = onPageTap,
                         onInkStroke = onInkStroke,
+                        onShapeDrawn = onShapeDrawn,
                     )
                 }
             }
@@ -220,6 +224,7 @@ private fun HorizontalViewport(
     onClearSelection: () -> Unit,
     onPageTap: (Int, Float, Float) -> Unit,
     onInkStroke: (Int, app.openpdf.foss.core.pdf.model.InkStroke) -> Unit,
+    onShapeDrawn: (Int, NormalizedRect) -> Unit,
     jumpToPage: Int?,
     onJumpHandled: () -> Unit,
 ) {
@@ -256,6 +261,7 @@ private fun HorizontalViewport(
                     onSelectText = onSelectText,
                     onPageTap = onPageTap,
                     onInkStroke = onInkStroke,
+                    onShapeDrawn = onShapeDrawn,
                 )
             }
         }
@@ -275,6 +281,7 @@ private fun PdfPageItem(
     onSelectText: (Int, Float, Float, Float, Float) -> Unit,
     onPageTap: (Int, Float, Float) -> Unit,
     onInkStroke: (Int, InkStroke) -> Unit,
+    onShapeDrawn: (Int, NormalizedRect) -> Unit,
 ) {
     val bitmap by produceState<Bitmap?>(
         initialValue = null, session, pageIndex, renderWidthPx, docVersion,
@@ -312,34 +319,78 @@ private fun PdfPageItem(
             )
         }
 
-        AnnotationTool.NOTE, AnnotationTool.ERASE -> baseModifier.pointerInput(pageIndex, annotationTool) {
-            detectTapGestures { offset ->
-                onPageTap(
-                    pageIndex,
-                    offset.x / size.width.toFloat(),
-                    offset.y / size.height.toFloat(),
-                )
-            }
-        }
-
-        AnnotationTool.NONE -> baseModifier.pointerInput(pageIndex, annotationTool) {
+        AnnotationTool.SHAPE -> baseModifier.pointerInput(pageIndex, annotationTool) {
             var start: Offset? = null
-            detectDragGesturesAfterLongPress(
-                onDragStart = { offset -> start = offset },
-                onDrag = { change, _ ->
-                    val s = start ?: return@detectDragGesturesAfterLongPress
-                    val w = size.width.toFloat()
-                    val h = size.height.toFloat()
-                    onSelectText(
-                        pageIndex,
-                        (s.x / w).coerceIn(0f, 1f),
-                        (s.y / h).coerceIn(0f, 1f),
-                        (change.position.x / w).coerceIn(0f, 1f),
-                        (change.position.y / h).coerceIn(0f, 1f),
-                    )
+            detectDragGestures(
+                onDragStart = { offset ->
+                    start = offset
+                    liveStroke = listOf(offset)
                 },
+                onDrag = { change, _ ->
+                    start?.let { liveStroke = listOf(it, change.position) }
+                },
+                onDragEnd = {
+                    val s = start
+                    val e = liveStroke.lastOrNull()
+                    if (s != null && e != null && s != e) {
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        onShapeDrawn(
+                            pageIndex,
+                            NormalizedRect(
+                                left = (minOf(s.x, e.x) / w).coerceIn(0f, 1f),
+                                top = (minOf(s.y, e.y) / h).coerceIn(0f, 1f),
+                                right = (maxOf(s.x, e.x) / w).coerceIn(0f, 1f),
+                                bottom = (maxOf(s.y, e.y) / h).coerceIn(0f, 1f),
+                            ),
+                        )
+                    }
+                    start = null
+                    liveStroke = emptyList()
+                },
+                onDragCancel = { start = null; liveStroke = emptyList() },
             )
         }
+
+        AnnotationTool.NOTE, AnnotationTool.TEXT, AnnotationTool.SIGN, AnnotationTool.ERASE ->
+            baseModifier.pointerInput(pageIndex, annotationTool) {
+                detectTapGestures { offset ->
+                    onPageTap(
+                        pageIndex,
+                        offset.x / size.width.toFloat(),
+                        offset.y / size.height.toFloat(),
+                    )
+                }
+            }
+
+        AnnotationTool.NONE -> baseModifier
+            .pointerInput(pageIndex, annotationTool) {
+                var start: Offset? = null
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { offset -> start = offset },
+                    onDrag = { change, _ ->
+                        val s = start ?: return@detectDragGesturesAfterLongPress
+                        val w = size.width.toFloat()
+                        val h = size.height.toFloat()
+                        onSelectText(
+                            pageIndex,
+                            (s.x / w).coerceIn(0f, 1f),
+                            (s.y / h).coerceIn(0f, 1f),
+                            (change.position.x / w).coerceIn(0f, 1f),
+                            (change.position.y / h).coerceIn(0f, 1f),
+                        )
+                    },
+                )
+            }
+            .pointerInput("form-tap", pageIndex) {
+                detectTapGestures { offset ->
+                    onPageTap(
+                        pageIndex,
+                        offset.x / size.width.toFloat(),
+                        offset.y / size.height.toFloat(),
+                    )
+                }
+            }
     }
 
     Box(modifier = baseModifier) {
@@ -379,6 +430,18 @@ private fun OverlayCanvas(overlays: PageOverlays, liveStroke: List<Offset>) {
         drawRects(overlays.searchRects, hitColor)
         drawRects(overlays.currentSearchRects, currentColor)
         drawRects(overlays.selectionRects, selectionColor)
+
+        // Interactive form fields get a light hint fill.
+        overlays.formFieldRects.forEach { r ->
+            drawRect(
+                color = Color(0x2A2C6BD6),
+                topLeft = Offset(r.left * size.width, r.top * size.height),
+                size = Size(
+                    (r.right - r.left) * size.width,
+                    (r.bottom - r.top) * size.height,
+                ),
+            )
+        }
 
         // Eraser mode: outline existing annotations so they can be targeted.
         overlays.annotationOutlines.forEach { r ->

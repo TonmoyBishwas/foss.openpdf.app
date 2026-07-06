@@ -11,9 +11,13 @@ import app.openpdf.foss.core.data.db.BookmarkEntity
 import app.openpdf.foss.core.files.DocumentSaver
 import app.openpdf.foss.core.files.SafFileManager
 import app.openpdf.foss.core.pdf.PdfDocumentSession
+import app.openpdf.foss.core.pdf.model.FormField
+import app.openpdf.foss.core.pdf.model.FormFieldType
 import app.openpdf.foss.core.pdf.model.InkStroke
 import app.openpdf.foss.core.pdf.model.MarkupType
+import app.openpdf.foss.core.pdf.model.NormalizedRect
 import app.openpdf.foss.core.pdf.model.PageAnnotation
+import app.openpdf.foss.core.pdf.model.ShapeType
 import app.openpdf.foss.core.pdf.PdfEngine
 import app.openpdf.foss.core.pdf.PdfPasswordRequiredException
 import app.openpdf.foss.core.pdf.model.OutlineNode
@@ -37,7 +41,7 @@ import javax.inject.Inject
 enum class ReadingMode { NORMAL, NIGHT, SEPIA }
 
 /** Active annotation tool. */
-enum class AnnotationTool { NONE, NOTE, INK, ERASE }
+enum class AnnotationTool { NONE, NOTE, INK, TEXT, SHAPE, SIGN, ERASE }
 
 /** Ink stroke color choices offered by the toolbar (ARGB). */
 val InkColors = listOf(0xFF2C3E50L, 0xFFBA1A1AL, 0xFF1B7F4BL, 0xFFF9A825L)
@@ -47,6 +51,8 @@ data class AnnotationUiState(
     val tool: AnnotationTool = AnnotationTool.NONE,
     val toolbarVisible: Boolean = false,
     val inkColor: Long = 0xFF2C3E50L,
+    val shapeType: ShapeType = ShapeType.RECTANGLE,
+    val signatureStrokes: List<InkStroke> = emptyList(),
     val dirty: Boolean = false,
     val saving: Boolean = false,
     val canWriteInPlace: Boolean = false,
@@ -121,6 +127,10 @@ class ViewerViewModel @Inject constructor(
     private val _pageAnnotations = MutableStateFlow<List<PageAnnotation>>(emptyList())
     val pageAnnotations: StateFlow<List<PageAnnotation>> = _pageAnnotations.asStateFlow()
 
+    /** Interactive form fields on the current page. */
+    private val _formFields = MutableStateFlow<List<FormField>>(emptyList())
+    val formFields: StateFlow<List<FormField>> = _formFields.asStateFlow()
+
     val bookmarks: StateFlow<List<BookmarkEntity>> =
         bookmarksRepository.forDocument(route.uri)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -167,6 +177,7 @@ class ViewerViewModel @Inject constructor(
                 _annotationState.update {
                     it.copy(canWriteInPlace = documentSaver.canWriteInPlace(uri))
                 }
+                refreshFormFields()
             } catch (e: PdfPasswordRequiredException) {
                 _uiState.value = ViewerUiState.PasswordRequired(e.wrongPasswordSupplied)
             } catch (e: Exception) {
@@ -181,6 +192,7 @@ class ViewerViewModel @Inject constructor(
         }
         viewModelScope.launch { recents.updateLastPage(uri.toString(), page) }
         if (_annotationState.value.tool == AnnotationTool.ERASE) refreshPageAnnotations()
+        refreshFormFields()
     }
 
     fun cycleReadingMode() {
@@ -310,6 +322,106 @@ class ViewerViewModel @Inject constructor(
             } ?: return@launch
             currentSession.deleteAnnotation(page, target.index)
             onDocumentMutated()
+        }
+    }
+
+    fun setShapeType(type: ShapeType) {
+        _annotationState.update { it.copy(shapeType = type) }
+    }
+
+    fun addFreeText(page: Int, x: Float, y: Float, text: String) {
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            val aspect = ready.pageSizes.getOrNull(page)?.aspectRatio ?: 0.7071f
+            // ~40% of page width, height scaled by line count.
+            val width = 0.4f
+            val lines = text.lines().size.coerceAtLeast(1)
+            val height = (0.035f * lines * aspect).coerceAtMost(0.5f)
+            val rect = NormalizedRect(
+                left = x.coerceIn(0f, 1f - width),
+                top = y.coerceIn(0f, 1f - height),
+                right = (x + width).coerceAtMost(1f),
+                bottom = (y + height).coerceAtMost(1f),
+            )
+            currentSession.addFreeText(page, rect, text, fontSize = 12f, argb = _annotationState.value.inkColor)
+            onDocumentMutated()
+        }
+    }
+
+    fun addShape(page: Int, rect: NormalizedRect) {
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            currentSession.addShape(
+                page, _annotationState.value.shapeType, rect,
+                _annotationState.value.inkColor, strokeWidth = 0.004f,
+            )
+            onDocumentMutated()
+        }
+    }
+
+    fun setSignature(strokes: List<InkStroke>) {
+        _annotationState.update { it.copy(signatureStrokes = strokes) }
+    }
+
+    /** Places the stored signature centered at the tapped point (~40% page width). */
+    fun placeSignature(page: Int, x: Float, y: Float) {
+        val strokes = _annotationState.value.signatureStrokes
+        if (strokes.isEmpty()) return
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            val aspect = ready.pageSizes.getOrNull(page)?.aspectRatio ?: 0.7071f
+            val width = 0.4f
+            val height = width * 0.4f * aspect
+            val left = (x - width / 2).coerceIn(0f, 1f - width)
+            val top = (y - height / 2).coerceIn(0f, 1f - height)
+            val scaled = strokes.map { stroke ->
+                InkStroke(stroke.points.map { (px, py) -> (left + px * width) to (top + py * height) })
+            }
+            currentSession.addInk(page, scaled, 0xFF1A237EL, strokeWidth = 0.005f)
+            onDocumentMutated()
+        }
+    }
+
+    // --- Forms ---
+
+    fun refreshFormFields() {
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            _formFields.value = runCatching {
+                currentSession.formFields(ready.currentPage)
+            }.getOrDefault(emptyList())
+        }
+    }
+
+    /** @return the form field at the point, or null. */
+    fun formFieldAt(page: Int, x: Float, y: Float): FormField? {
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return null
+        if (page != ready.currentPage) return null
+        return _formFields.value.lastOrNull { f ->
+            x in f.rect.left..f.rect.right && y in f.rect.top..f.rect.bottom
+        }
+    }
+
+    fun setFormValue(field: FormField, value: String) {
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            currentSession.setFormFieldValue(ready.currentPage, field.index, value)
+            onDocumentMutated()
+            refreshFormFields()
+        }
+    }
+
+    fun toggleFormField(field: FormField) {
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            currentSession.toggleFormField(ready.currentPage, field.index)
+            onDocumentMutated()
+            refreshFormFields()
         }
     }
 

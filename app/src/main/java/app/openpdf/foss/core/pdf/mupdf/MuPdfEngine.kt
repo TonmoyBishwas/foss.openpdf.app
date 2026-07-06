@@ -10,9 +10,13 @@ import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
 import app.openpdf.foss.core.pdf.model.SearchHit
 import app.openpdf.foss.core.pdf.model.TextSelection
+import app.openpdf.foss.core.pdf.model.FormField
+import app.openpdf.foss.core.pdf.model.FormFieldType
 import app.openpdf.foss.core.pdf.model.InkStroke
 import app.openpdf.foss.core.pdf.model.MarkupType
 import app.openpdf.foss.core.pdf.model.PageAnnotation
+import app.openpdf.foss.core.pdf.model.ShapeType
+import com.artifex.mupdf.fitz.PDFWidget
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.Outline
@@ -318,6 +322,127 @@ internal class MuPdfSession(
                     page.deleteAnnotation(annot)
                     page.update()
                 }
+            }
+            markMutated()
+        }
+
+    override suspend fun addFreeText(
+        pageIndex: Int,
+        rect: NormalizedRect,
+        text: String,
+        fontSize: Float,
+        argb: Long,
+    ) = withContext(dispatcher) {
+        withPdfPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val w = bounds.x1 - bounds.x0
+            val h = bounds.y1 - bounds.y0
+            val annot = page.createAnnotation(PDFAnnotation.TYPE_FREE_TEXT)
+            annot.rect = Rect(
+                bounds.x0 + rect.left * w,
+                bounds.y0 + rect.top * h,
+                bounds.x0 + rect.right * w,
+                bounds.y0 + rect.bottom * h,
+            )
+            annot.setDefaultAppearance("Helv", fontSize, argb.toRgb())
+            annot.contents = text
+            annot.update()
+            page.update()
+        }
+        markMutated()
+    }
+
+    override suspend fun addShape(
+        pageIndex: Int,
+        type: ShapeType,
+        rect: NormalizedRect,
+        argb: Long,
+        strokeWidth: Float,
+    ) = withContext(dispatcher) {
+        withPdfPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val w = bounds.x1 - bounds.x0
+            val h = bounds.y1 - bounds.y0
+            val x0 = bounds.x0 + rect.left * w
+            val y0 = bounds.y0 + rect.top * h
+            val x1 = bounds.x0 + rect.right * w
+            val y1 = bounds.y0 + rect.bottom * h
+            when (type) {
+                ShapeType.RECTANGLE, ShapeType.ELLIPSE -> {
+                    val annot = page.createAnnotation(
+                        if (type == ShapeType.RECTANGLE) PDFAnnotation.TYPE_SQUARE
+                        else PDFAnnotation.TYPE_CIRCLE
+                    )
+                    annot.rect = Rect(x0, y0, x1, y1)
+                    annot.color = argb.toRgb()
+                    annot.border = strokeWidth * w
+                    annot.update()
+                }
+
+                ShapeType.LINE -> {
+                    val annot = page.createAnnotation(PDFAnnotation.TYPE_LINE)
+                    annot.setLine(Point(x0, y0), Point(x1, y1))
+                    annot.color = argb.toRgb()
+                    annot.border = strokeWidth * w
+                    annot.update()
+                }
+            }
+            page.update()
+        }
+        markMutated()
+    }
+
+    override suspend fun formFields(pageIndex: Int): List<FormField> =
+        withContext(dispatcher) {
+            withPdfPage(pageIndex) { page ->
+                val bounds = page.bounds
+                val widgets = page.widgets ?: emptyArray()
+                widgets.mapIndexed { index, widget ->
+                    FormField(
+                        index = index,
+                        type = when (widget.fieldType) {
+                            PDFWidget.TYPE_TEXT -> FormFieldType.TEXT
+                            PDFWidget.TYPE_CHECKBOX -> FormFieldType.CHECKBOX
+                            PDFWidget.TYPE_RADIOBUTTON -> FormFieldType.RADIO
+                            PDFWidget.TYPE_COMBOBOX -> FormFieldType.COMBO
+                            PDFWidget.TYPE_LISTBOX -> FormFieldType.LIST
+                            PDFWidget.TYPE_SIGNATURE -> FormFieldType.SIGNATURE
+                            PDFWidget.TYPE_BUTTON -> FormFieldType.BUTTON
+                            else -> FormFieldType.UNKNOWN
+                        },
+                        rect = widget.rect.toNormalizedRect(bounds),
+                        value = widget.value ?: "",
+                        options = widget.options?.toList() ?: emptyList(),
+                    )
+                }
+            }
+        }
+
+    override suspend fun setFormFieldValue(
+        pageIndex: Int,
+        fieldIndex: Int,
+        value: String,
+    ): Boolean = withContext(dispatcher) {
+        val ok = withPdfPage(pageIndex) { page ->
+            val widget = (page.widgets ?: emptyArray()).getOrNull(fieldIndex)
+                ?: return@withPdfPage false
+            val accepted = widget.setValue(value)
+            widget.update()
+            page.update()
+            accepted
+        }
+        if (ok) markMutated()
+        ok
+    }
+
+    override suspend fun toggleFormField(pageIndex: Int, fieldIndex: Int): Unit =
+        withContext(dispatcher) {
+            withPdfPage(pageIndex) { page ->
+                val widget = (page.widgets ?: emptyArray()).getOrNull(fieldIndex)
+                    ?: return@withPdfPage
+                widget.toggle()
+                widget.update()
+                page.update()
             }
             markMutated()
         }

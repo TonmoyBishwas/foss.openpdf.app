@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.0
+
+- Fill & sign: tap interactive form fields to fill them (text, checkboxes,
+  radio buttons, dropdowns) — saved into the PDF
+- Signature: draw once, then tap to place it anywhere (stored as vector ink)
+- Text boxes (free text) and shapes (rectangle, ellipse, line) with colors
+- Form fields get a subtle hint highlight so they're easy to spot
+
 ## v0.3.0
 
 - Annotations are now written into the PDF file itself (not an overlay):

@@ -48,6 +48,16 @@
     <string name="annotate_unsaved">Unsaved changes</string>
     <string name="note_dialog_title">Add note</string>
     <string name="note_dialog_label">Note text</string>
+    <string name="tool_text_box">Text box</string>
+    <string name="tool_shape">Shape</string>
+    <string name="tool_shape_type">Shape type</string>
+    <string name="tool_sign">Sign</string>
+    <string name="signature_dialog_title">Draw your signature</string>
+    <string name="signature_use">Use</string>
+    <string name="signature_clear">Clear</string>
+    <string name="form_field_title">Fill form field</string>
+    <string name="form_field_value">Value</string>
+    <string name="action_apply">Apply</string>
 
     <string name="search_hint">Search in document</string>
     <string name="search_prev">Previous match</string>

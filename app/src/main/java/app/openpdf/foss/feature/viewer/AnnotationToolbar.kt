@@ -9,10 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.Gesture
+import androidx.compose.material.icons.filled.HorizontalRule
+import androidx.compose.material.icons.filled.Rectangle
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +43,7 @@ fun AnnotationToolbar(
     state: AnnotationUiState,
     onToolSelected: (AnnotationTool) -> Unit,
     onColorSelected: (Long) -> Unit,
+    onShapeSelected: (app.openpdf.foss.core.pdf.model.ShapeType) -> Unit,
     onSave: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -61,13 +67,33 @@ fun AnnotationToolbar(
                 onClick = { onToolSelected(AnnotationTool.INK) },
             )
             ToolButton(
+                icon = Icons.Default.TextFields,
+                description = stringResource(R.string.tool_text_box),
+                selected = state.tool == AnnotationTool.TEXT,
+                onClick = { onToolSelected(AnnotationTool.TEXT) },
+            )
+            ToolButton(
+                icon = Icons.Default.Rectangle,
+                description = stringResource(R.string.tool_shape),
+                selected = state.tool == AnnotationTool.SHAPE,
+                onClick = { onToolSelected(AnnotationTool.SHAPE) },
+            )
+            ToolButton(
+                icon = Icons.Default.Gesture,
+                description = stringResource(R.string.tool_sign),
+                selected = state.tool == AnnotationTool.SIGN,
+                onClick = { onToolSelected(AnnotationTool.SIGN) },
+            )
+            ToolButton(
                 icon = Icons.Default.Close,
                 description = stringResource(R.string.tool_erase),
                 selected = state.tool == AnnotationTool.ERASE,
                 onClick = { onToolSelected(AnnotationTool.ERASE) },
             )
 
-            if (state.tool == AnnotationTool.INK) {
+            if (state.tool == AnnotationTool.INK || state.tool == AnnotationTool.SHAPE ||
+                state.tool == AnnotationTool.TEXT
+            ) {
                 InkColors.forEach { argb ->
                     ColorDot(
                         argb = argb,
@@ -75,6 +101,12 @@ fun AnnotationToolbar(
                         onClick = { onColorSelected(argb) },
                     )
                 }
+            }
+            if (state.tool == AnnotationTool.SHAPE) {
+                ShapeTypeButton(
+                    current = state.shapeType,
+                    onSelect = onShapeSelected,
+                )
             }
 
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
@@ -127,6 +159,33 @@ private fun ToolButton(
             contentDescription = description,
             tint = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun ShapeTypeButton(
+    current: app.openpdf.foss.core.pdf.model.ShapeType,
+    onSelect: (app.openpdf.foss.core.pdf.model.ShapeType) -> Unit,
+) {
+    // Cycles rectangle -> ellipse -> line.
+    val next = when (current) {
+        app.openpdf.foss.core.pdf.model.ShapeType.RECTANGLE ->
+            app.openpdf.foss.core.pdf.model.ShapeType.ELLIPSE
+        app.openpdf.foss.core.pdf.model.ShapeType.ELLIPSE ->
+            app.openpdf.foss.core.pdf.model.ShapeType.LINE
+        app.openpdf.foss.core.pdf.model.ShapeType.LINE ->
+            app.openpdf.foss.core.pdf.model.ShapeType.RECTANGLE
+    }
+    IconButton(onClick = { onSelect(next) }) {
+        Icon(
+            when (current) {
+                app.openpdf.foss.core.pdf.model.ShapeType.RECTANGLE -> Icons.Default.Rectangle
+                app.openpdf.foss.core.pdf.model.ShapeType.ELLIPSE -> Icons.Default.Circle
+                app.openpdf.foss.core.pdf.model.ShapeType.LINE -> Icons.Default.HorizontalRule
+            },
+            contentDescription = stringResource(R.string.tool_shape_type),
+            tint = MaterialTheme.colorScheme.primary,
         )
     }
 }
