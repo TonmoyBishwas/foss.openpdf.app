@@ -8,8 +8,12 @@ import androidx.navigation.toRoute
 import app.openpdf.foss.core.data.BookmarksRepository
 import app.openpdf.foss.core.data.RecentFilesRepository
 import app.openpdf.foss.core.data.db.BookmarkEntity
+import app.openpdf.foss.core.files.DocumentSaver
 import app.openpdf.foss.core.files.SafFileManager
 import app.openpdf.foss.core.pdf.PdfDocumentSession
+import app.openpdf.foss.core.pdf.model.InkStroke
+import app.openpdf.foss.core.pdf.model.MarkupType
+import app.openpdf.foss.core.pdf.model.PageAnnotation
 import app.openpdf.foss.core.pdf.PdfEngine
 import app.openpdf.foss.core.pdf.PdfPasswordRequiredException
 import app.openpdf.foss.core.pdf.model.OutlineNode
@@ -31,6 +35,24 @@ import javax.inject.Inject
 
 /** Color treatment applied to rendered pages. */
 enum class ReadingMode { NORMAL, NIGHT, SEPIA }
+
+/** Active annotation tool. */
+enum class AnnotationTool { NONE, NOTE, INK, ERASE }
+
+/** Ink stroke color choices offered by the toolbar (ARGB). */
+val InkColors = listOf(0xFF2C3E50L, 0xFFBA1A1AL, 0xFF1B7F4BL, 0xFFF9A825L)
+const val HighlightColor = 0xFFFFEB3BL
+
+data class AnnotationUiState(
+    val tool: AnnotationTool = AnnotationTool.NONE,
+    val toolbarVisible: Boolean = false,
+    val inkColor: Long = 0xFF2C3E50L,
+    val dirty: Boolean = false,
+    val saving: Boolean = false,
+    val canWriteInPlace: Boolean = false,
+    val saveError: String? = null,
+    val savedTick: Int = 0,
+)
 
 /** Scroll orientation of the viewer. */
 enum class ViewMode { VERTICAL, HORIZONTAL }
@@ -72,6 +94,7 @@ class ViewerViewModel @Inject constructor(
     private val fileManager: SafFileManager,
     private val recents: RecentFilesRepository,
     private val bookmarksRepository: BookmarksRepository,
+    private val documentSaver: DocumentSaver,
     val readAloud: ReadAloudController,
 ) : ViewModel() {
 
@@ -86,6 +109,17 @@ class ViewerViewModel @Inject constructor(
 
     private val _selection = MutableStateFlow<SelectionState?>(null)
     val selection: StateFlow<SelectionState?> = _selection.asStateFlow()
+
+    private val _annotationState = MutableStateFlow(AnnotationUiState())
+    val annotationState: StateFlow<AnnotationUiState> = _annotationState.asStateFlow()
+
+    /** Bumped after every document mutation so page bitmaps re-render. */
+    private val _docVersion = MutableStateFlow(0)
+    val docVersion: StateFlow<Int> = _docVersion.asStateFlow()
+
+    /** Annotations on the current page, for the eraser tool. */
+    private val _pageAnnotations = MutableStateFlow<List<PageAnnotation>>(emptyList())
+    val pageAnnotations: StateFlow<List<PageAnnotation>> = _pageAnnotations.asStateFlow()
 
     val bookmarks: StateFlow<List<BookmarkEntity>> =
         bookmarksRepository.forDocument(route.uri)
@@ -130,6 +164,9 @@ class ViewerViewModel @Inject constructor(
                     initialPage = lastPage,
                     outline = outline,
                 )
+                _annotationState.update {
+                    it.copy(canWriteInPlace = documentSaver.canWriteInPlace(uri))
+                }
             } catch (e: PdfPasswordRequiredException) {
                 _uiState.value = ViewerUiState.PasswordRequired(e.wrongPasswordSupplied)
             } catch (e: Exception) {
@@ -143,6 +180,7 @@ class ViewerViewModel @Inject constructor(
             if (state is ViewerUiState.Ready) state.copy(currentPage = page) else state
         }
         viewModelScope.launch { recents.updateLastPage(uri.toString(), page) }
+        if (_annotationState.value.tool == AnnotationTool.ERASE) refreshPageAnnotations()
     }
 
     fun cycleReadingMode() {
@@ -208,6 +246,125 @@ class ViewerViewModel @Inject constructor(
         if (state.hits.isEmpty()) return
         val wrapped = ((index % state.hits.size) + state.hits.size) % state.hits.size
         _searchState.update { it.copy(currentHit = wrapped) }
+    }
+
+    // --- Annotations ---
+
+    fun setAnnotationToolbarVisible(visible: Boolean) {
+        _annotationState.update {
+            it.copy(toolbarVisible = visible, tool = if (visible) it.tool else AnnotationTool.NONE)
+        }
+        if (!visible) clearSelection()
+    }
+
+    fun setAnnotationTool(tool: AnnotationTool) {
+        _annotationState.update {
+            it.copy(tool = if (it.tool == tool) AnnotationTool.NONE else tool)
+        }
+        refreshPageAnnotations()
+    }
+
+    fun setInkColor(argb: Long) {
+        _annotationState.update { it.copy(inkColor = argb) }
+    }
+
+    /** Applies highlight/underline/strikethrough to the current text selection. */
+    fun markupSelection(type: MarkupType) {
+        val sel = _selection.value ?: return
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            val color = if (type == MarkupType.HIGHLIGHT) HighlightColor
+            else _annotationState.value.inkColor
+            currentSession.addTextMarkup(sel.pageIndex, type, sel.selection.rects, color)
+            clearSelection()
+            onDocumentMutated()
+        }
+    }
+
+    fun addNote(page: Int, x: Float, y: Float, contents: String) {
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            currentSession.addNote(page, x, y, contents, 0xFFF9A825L)
+            onDocumentMutated()
+        }
+    }
+
+    fun addInk(page: Int, strokes: List<InkStroke>) {
+        val currentSession = session ?: return
+        if (strokes.isEmpty()) return
+        viewModelScope.launch {
+            currentSession.addInk(
+                page, strokes, _annotationState.value.inkColor, strokeWidth = 0.004f,
+            )
+            onDocumentMutated()
+        }
+    }
+
+    /** Erase tool: deletes the topmost annotation containing the tapped point. */
+    fun eraseAnnotationAt(page: Int, x: Float, y: Float) {
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            val annots = currentSession.annotations(page)
+            val target = annots.lastOrNull { annot ->
+                annot.rects.any { r -> x in r.left..r.right && y in r.top..r.bottom }
+            } ?: return@launch
+            currentSession.deleteAnnotation(page, target.index)
+            onDocumentMutated()
+        }
+    }
+
+    private fun onDocumentMutated() {
+        _docVersion.update { it + 1 }
+        _annotationState.update { it.copy(dirty = true) }
+        refreshPageAnnotations()
+    }
+
+    private fun refreshPageAnnotations() {
+        val currentSession = session ?: return
+        val ready = _uiState.value as? ViewerUiState.Ready ?: return
+        viewModelScope.launch {
+            _pageAnnotations.value = runCatching {
+                currentSession.annotations(ready.currentPage)
+            }.getOrDefault(emptyList())
+        }
+    }
+
+    fun save() {
+        val currentSession = session ?: return
+        _annotationState.update { it.copy(saving = true, saveError = null) }
+        viewModelScope.launch {
+            try {
+                documentSaver.saveTo(currentSession, uri)
+                _annotationState.update {
+                    it.copy(saving = false, dirty = false, savedTick = it.savedTick + 1)
+                }
+            } catch (e: Exception) {
+                _annotationState.update {
+                    it.copy(saving = false, saveError = e.message ?: "Save failed")
+                }
+            }
+        }
+    }
+
+    fun saveTo(target: Uri) {
+        val currentSession = session ?: return
+        _annotationState.update { it.copy(saving = true, saveError = null) }
+        viewModelScope.launch {
+            try {
+                documentSaver.saveTo(currentSession, target)
+                _annotationState.update {
+                    it.copy(saving = false, dirty = false, savedTick = it.savedTick + 1)
+                }
+            } catch (e: Exception) {
+                _annotationState.update {
+                    it.copy(saving = false, saveError = e.message ?: "Save failed")
+                }
+            }
+        }
+    }
+
+    fun dismissSaveError() {
+        _annotationState.update { it.copy(saveError = null) }
     }
 
     // --- Text selection ---

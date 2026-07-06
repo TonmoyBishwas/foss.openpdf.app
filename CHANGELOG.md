@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.0
+
+- Annotations are now written into the PDF file itself (not an overlay):
+  highlight, underline, and strikethrough from text selection; sticky
+  notes; freehand drawing with color choices; eraser for existing annotations
+- Save in place (when the file allows it) or save a copy, with an atomic
+  save pipeline that verifies the output before touching your original
+- Unsaved-changes indicator and annotation toolbar
+
 ## v0.2.0
 
 - Full-text search with match highlighting and previous/next navigation

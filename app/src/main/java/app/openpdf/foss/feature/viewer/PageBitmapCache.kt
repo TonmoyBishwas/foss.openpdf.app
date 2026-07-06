@@ -21,7 +21,7 @@ object PageBitmapCache {
     private val renderMutex = Mutex()
 
     private fun key(session: PdfDocumentSession, page: Int, width: Int) =
-        "${System.identityHashCode(session)}:$page@$width"
+        "${System.identityHashCode(session)}v${session.contentVersion}:$page@$width"
 
     suspend fun getOrRender(session: PdfDocumentSession, page: Int, width: Int): Bitmap {
         cache.get(key(session, page, width))?.let { return it }

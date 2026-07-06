@@ -3,6 +3,10 @@ package app.openpdf.foss.core.pdf
 import android.graphics.Bitmap
 import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
+import app.openpdf.foss.core.pdf.model.InkStroke
+import app.openpdf.foss.core.pdf.model.MarkupType
+import app.openpdf.foss.core.pdf.model.NormalizedRect
+import app.openpdf.foss.core.pdf.model.PageAnnotation
 import app.openpdf.foss.core.pdf.model.SearchHit
 import app.openpdf.foss.core.pdf.model.TextSelection
 
@@ -62,6 +66,32 @@ interface PdfDocumentSession : AutoCloseable {
         endX: Float,
         endY: Float,
     ): TextSelection?
+
+    // --- Editing (only when [isEditable]) ---
+
+    /** Whether this document supports writing annotations (i.e. is a real PDF). */
+    val isEditable: Boolean
+
+    /** Monotonic counter bumped on every mutation; include in render cache keys. */
+    val contentVersion: Int
+
+    /** Existing annotations on the page. */
+    suspend fun annotations(pageIndex: Int): List<PageAnnotation>
+
+    /** Adds highlight/underline/strikethrough over [rects]. [argb] like 0xFFFFEB3B. */
+    suspend fun addTextMarkup(pageIndex: Int, type: MarkupType, rects: List<NormalizedRect>, argb: Long)
+
+    /** Adds a sticky-note comment at a normalized point. */
+    suspend fun addNote(pageIndex: Int, x: Float, y: Float, contents: String, argb: Long)
+
+    /** Adds freehand ink strokes. [strokeWidth] in normalized page-width units. */
+    suspend fun addInk(pageIndex: Int, strokes: List<InkStroke>, argb: Long, strokeWidth: Float)
+
+    /** Deletes the annotation at [annotIndex] (from [annotations]). */
+    suspend fun deleteAnnotation(pageIndex: Int, annotIndex: Int)
+
+    /** Writes the current document state (including edits) to [filePath]. */
+    suspend fun saveTo(filePath: String)
 
     override fun close()
 }

@@ -10,12 +10,19 @@ import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
 import app.openpdf.foss.core.pdf.model.SearchHit
 import app.openpdf.foss.core.pdf.model.TextSelection
+import app.openpdf.foss.core.pdf.model.InkStroke
+import app.openpdf.foss.core.pdf.model.MarkupType
+import app.openpdf.foss.core.pdf.model.PageAnnotation
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.Outline
+import com.artifex.mupdf.fitz.PDFAnnotation
+import com.artifex.mupdf.fitz.PDFDocument
+import com.artifex.mupdf.fitz.PDFPage
 import com.artifex.mupdf.fitz.Page
 import com.artifex.mupdf.fitz.Point
 import com.artifex.mupdf.fitz.Quad
+import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.StructuredText
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice
 import kotlinx.coroutines.CoroutineDispatcher
@@ -159,6 +166,165 @@ internal class MuPdfSession(
         } finally {
             page.destroy()
         }
+    }
+
+    // --- Editing ---
+
+    override val isEditable: Boolean = document is PDFDocument
+
+    @Volatile
+    override var contentVersion: Int = 0
+        private set
+
+    private fun markMutated() {
+        contentVersion++
+    }
+
+    private inline fun <T> withPdfPage(pageIndex: Int, block: (PDFPage) -> T): T =
+        withPage(pageIndex) { page ->
+            block(page as? PDFPage ?: error("Document is not editable"))
+        }
+
+    private fun Long.toRgb(): FloatArray = floatArrayOf(
+        ((this shr 16) and 0xFF) / 255f,
+        ((this shr 8) and 0xFF) / 255f,
+        (this and 0xFF) / 255f,
+    )
+
+    override suspend fun annotations(pageIndex: Int): List<PageAnnotation> =
+        withContext(dispatcher) {
+            withPdfPage(pageIndex) { page ->
+                val bounds = page.bounds
+                val annots = page.annotations ?: emptyArray()
+                annots.mapIndexed { index, annot ->
+                    PageAnnotation(
+                        index = index,
+                        typeName = annotTypeName(annot.type),
+                        rects = listOf(annot.rect.toNormalizedRect(bounds)),
+                        contents = annot.contents ?: "",
+                    )
+                }
+            }
+        }
+
+    private fun annotTypeName(type: Int): String = when (type) {
+        PDFAnnotation.TYPE_HIGHLIGHT -> "Highlight"
+        PDFAnnotation.TYPE_UNDERLINE -> "Underline"
+        PDFAnnotation.TYPE_STRIKE_OUT -> "Strikethrough"
+        PDFAnnotation.TYPE_TEXT -> "Note"
+        PDFAnnotation.TYPE_INK -> "Ink"
+        PDFAnnotation.TYPE_FREE_TEXT -> "Text box"
+        PDFAnnotation.TYPE_SQUARE -> "Rectangle"
+        PDFAnnotation.TYPE_CIRCLE -> "Ellipse"
+        PDFAnnotation.TYPE_LINE -> "Line"
+        else -> "Annotation"
+    }
+
+    private fun Rect.toNormalizedRect(bounds: Rect): NormalizedRect {
+        val width = bounds.x1 - bounds.x0
+        val height = bounds.y1 - bounds.y0
+        return NormalizedRect(
+            left = ((x0 - bounds.x0) / width).coerceIn(0f, 1f),
+            top = ((y0 - bounds.y0) / height).coerceIn(0f, 1f),
+            right = ((x1 - bounds.x0) / width).coerceIn(0f, 1f),
+            bottom = ((y1 - bounds.y0) / height).coerceIn(0f, 1f),
+        )
+    }
+
+    override suspend fun addTextMarkup(
+        pageIndex: Int,
+        type: MarkupType,
+        rects: List<NormalizedRect>,
+        argb: Long,
+    ) = withContext(dispatcher) {
+        withPdfPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val w = bounds.x1 - bounds.x0
+            val h = bounds.y1 - bounds.y0
+            val annotType = when (type) {
+                MarkupType.HIGHLIGHT -> PDFAnnotation.TYPE_HIGHLIGHT
+                MarkupType.UNDERLINE -> PDFAnnotation.TYPE_UNDERLINE
+                MarkupType.STRIKEOUT -> PDFAnnotation.TYPE_STRIKE_OUT
+            }
+            val annot = page.createAnnotation(annotType)
+            val quads = rects.map { r ->
+                val x0 = bounds.x0 + r.left * w
+                val x1 = bounds.x0 + r.right * w
+                val y0 = bounds.y0 + r.top * h
+                val y1 = bounds.y0 + r.bottom * h
+                Quad(x0, y0, x1, y0, x0, y1, x1, y1)
+            }.toTypedArray()
+            annot.quadPoints = quads
+            annot.color = argb.toRgb()
+            annot.update()
+            page.update()
+        }
+        markMutated()
+    }
+
+    override suspend fun addNote(
+        pageIndex: Int,
+        x: Float,
+        y: Float,
+        contents: String,
+        argb: Long,
+    ) = withContext(dispatcher) {
+        withPdfPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val w = bounds.x1 - bounds.x0
+            val h = bounds.y1 - bounds.y0
+            val cx = bounds.x0 + x * w
+            val cy = bounds.y0 + y * h
+            val annot = page.createAnnotation(PDFAnnotation.TYPE_TEXT)
+            annot.rect = Rect(cx, cy, cx + 24f, cy + 24f)
+            annot.contents = contents
+            annot.color = argb.toRgb()
+            annot.update()
+            page.update()
+        }
+        markMutated()
+    }
+
+    override suspend fun addInk(
+        pageIndex: Int,
+        strokes: List<InkStroke>,
+        argb: Long,
+        strokeWidth: Float,
+    ) = withContext(dispatcher) {
+        withPdfPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val w = bounds.x1 - bounds.x0
+            val h = bounds.y1 - bounds.y0
+            val annot = page.createAnnotation(PDFAnnotation.TYPE_INK)
+            val inkList = strokes.map { stroke ->
+                stroke.points.map { (px, py) ->
+                    Point(bounds.x0 + px * w, bounds.y0 + py * h)
+                }.toTypedArray()
+            }.toTypedArray()
+            annot.inkList = inkList
+            annot.color = argb.toRgb()
+            annot.border = strokeWidth * w
+            annot.update()
+            page.update()
+        }
+        markMutated()
+    }
+
+    override suspend fun deleteAnnotation(pageIndex: Int, annotIndex: Int) =
+        withContext(dispatcher) {
+            withPdfPage(pageIndex) { page ->
+                val annots = page.annotations ?: emptyArray()
+                annots.getOrNull(annotIndex)?.let { annot ->
+                    page.deleteAnnotation(annot)
+                    page.update()
+                }
+            }
+            markMutated()
+        }
+
+    override suspend fun saveTo(filePath: String): Unit = withContext(dispatcher) {
+        val pdf = document as? PDFDocument ?: error("Document is not editable")
+        pdf.save(filePath, "compress")
     }
 
     private fun Quad.toNormalizedRect(bounds: com.artifex.mupdf.fitz.Rect): NormalizedRect {

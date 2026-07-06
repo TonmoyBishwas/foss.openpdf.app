@@ -31,3 +31,20 @@ data class TextSelection(
     val text: String,
     val rects: List<NormalizedRect>,
 )
+
+/** Text markup annotation kinds. */
+enum class MarkupType { HIGHLIGHT, UNDERLINE, STRIKEOUT }
+
+/**
+ * An existing annotation on a page. [index] is its position in the page's
+ * annotation array and is only valid until the page is next mutated.
+ */
+data class PageAnnotation(
+    val index: Int,
+    val typeName: String,
+    val rects: List<NormalizedRect>,
+    val contents: String,
+)
+
+/** One freehand stroke in normalized page coordinates. */
+data class InkStroke(val points: List<Pair<Float, Float>>)

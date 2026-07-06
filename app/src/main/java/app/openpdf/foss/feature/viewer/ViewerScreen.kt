@@ -3,6 +3,8 @@ package app.openpdf.foss.feature.viewer
 import android.content.Context
 import android.content.Intent
 import android.print.PrintManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +20,12 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.BorderColor
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FormatStrikethrough
+import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
@@ -52,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -64,6 +71,7 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.openpdf.foss.R
+import app.openpdf.foss.core.pdf.model.MarkupType
 import app.openpdf.foss.core.pdf.model.NormalizedRect
 import app.openpdf.foss.ui.theme.Spacing
 
@@ -78,6 +86,9 @@ fun ViewerScreen(
     val selection by viewModel.selection.collectAsStateWithLifecycle()
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val isSpeaking by viewModel.readAloud.isSpeaking.collectAsStateWithLifecycle()
+    val annotationState by viewModel.annotationState.collectAsStateWithLifecycle()
+    val docVersion by viewModel.docVersion.collectAsStateWithLifecycle()
+    val pageAnnotations by viewModel.pageAnnotations.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -93,6 +104,20 @@ fun ViewerScreen(
     var showBookmarks by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var jumpToPage by remember { mutableStateOf<Int?>(null) }
+    var notePlacement by remember { mutableStateOf<Triple<Int, Float, Float>?>(null) }
+
+    val saveAsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target -> target?.let(viewModel::saveTo) }
+
+    fun requestSave() {
+        if (annotationState.canWriteInPlace) {
+            viewModel.save()
+        } else {
+            val name = (uiState as? ViewerUiState.Ready)?.displayName ?: "document.pdf"
+            saveAsLauncher.launch(name)
+        }
+    }
 
     // Jump to the page of the current search hit as the user steps through hits.
     LaunchedEffect(searchState.currentHit) {
@@ -143,6 +168,21 @@ fun ViewerScreen(
                     },
                     onCycleReadingMode = { viewModel.cycleReadingMode(); showMenu = false },
                     onToggleViewMode = { viewModel.toggleViewMode(); showMenu = false },
+                    onAnnotate = {
+                        viewModel.setAnnotationToolbarVisible(!annotationState.toolbarVisible)
+                    },
+                    annotateActive = annotationState.toolbarVisible,
+                )
+            }
+        },
+        bottomBar = {
+            if (annotationState.toolbarVisible && uiState is ViewerUiState.Ready) {
+                AnnotationToolbar(
+                    state = annotationState,
+                    onToolSelected = viewModel::setAnnotationTool,
+                    onColorSelected = viewModel::setInkColor,
+                    onSave = { requestSave() },
+                    onClose = { viewModel.setAnnotationToolbarVisible(false) },
                 )
             }
         },
@@ -196,6 +236,8 @@ fun ViewerScreen(
                             onPageChanged = viewModel::onPageChanged,
                             readingMode = state.readingMode,
                             viewMode = state.viewMode,
+                            docVersion = docVersion,
+                            annotationTool = annotationState.tool,
                             overlaysForPage = { page ->
                                 PageOverlays(
                                     searchRects = hitsByPage[page]
@@ -206,39 +248,104 @@ fun ViewerScreen(
                                     selectionRects = if (selection?.pageIndex == page)
                                         selection?.selection?.rects ?: emptyList()
                                     else emptyList(),
+                                    inkColor = annotationState.inkColor,
+                                    annotationOutlines = if (
+                                        annotationState.tool == AnnotationTool.ERASE &&
+                                        page == state.currentPage
+                                    ) pageAnnotations.flatMap { it.rects } else emptyList(),
                                 )
                             },
                             onSelectText = viewModel::selectText,
                             onClearSelection = viewModel::clearSelection,
+                            onPageTap = { page, x, y ->
+                                when (annotationState.tool) {
+                                    AnnotationTool.NOTE -> notePlacement = Triple(page, x, y)
+                                    AnnotationTool.ERASE -> viewModel.eraseAnnotationAt(page, x, y)
+                                    else -> Unit
+                                }
+                            },
+                            onInkStroke = { page, stroke ->
+                                viewModel.addInk(page, listOf(stroke))
+                            },
                             jumpToPage = jumpToPage,
                             onJumpHandled = { jumpToPage = null },
                         )
                     }
 
-                    // Copy affordance while a selection exists.
+                    notePlacement?.let { (page, x, y) ->
+                        NoteDialog(
+                            onConfirm = { text ->
+                                viewModel.addNote(page, x, y, text)
+                                notePlacement = null
+                            },
+                            onDismiss = { notePlacement = null },
+                        )
+                    }
+
+                    annotationState.saveError?.let { error ->
+                        LaunchedEffect(error) { }
+                        Snackbar(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(Spacing.lg),
+                            action = {
+                                TextButton(onClick = viewModel::dismissSaveError) {
+                                    Text(stringResource(R.string.action_cancel))
+                                }
+                            },
+                        ) { Text(error) }
+                    }
+
+                    // Copy / markup affordances while a selection exists.
                     selection?.let { sel ->
                         Snackbar(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(Spacing.lg),
                             action = {
-                                TextButton(
-                                    onClick = {
-                                        clipboard.setText(AnnotatedString(sel.selection.text))
-                                        viewModel.clearSelection()
-                                    },
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null)
-                                    Text(
-                                        stringResource(R.string.action_copy),
-                                        modifier = Modifier.padding(start = Spacing.xs),
-                                    )
+                                Row {
+                                    IconButton(
+                                        onClick = {
+                                            clipboard.setText(AnnotatedString(sel.selection.text))
+                                            viewModel.clearSelection()
+                                        },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = stringResource(R.string.action_copy),
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.markupSelection(MarkupType.HIGHLIGHT) },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.BorderColor,
+                                            contentDescription = stringResource(R.string.tool_highlight),
+                                            tint = Color(0xFFFFEB3B),
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.markupSelection(MarkupType.UNDERLINE) },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.FormatUnderlined,
+                                            contentDescription = stringResource(R.string.tool_underline),
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.markupSelection(MarkupType.STRIKEOUT) },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.FormatStrikethrough,
+                                            contentDescription = stringResource(R.string.tool_strikethrough),
+                                        )
+                                    }
                                 }
                             },
                         ) {
                             Text(
                                 text = sel.selection.text,
-                                maxLines = 2,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -300,6 +407,8 @@ private fun ViewerTopBar(
     onPrint: () -> Unit,
     onCycleReadingMode: () -> Unit,
     onToggleViewMode: () -> Unit,
+    onAnnotate: () -> Unit,
+    annotateActive: Boolean,
 ) {
     TopAppBar(
         title = {
@@ -335,6 +444,14 @@ private fun ViewerTopBar(
         },
         actions = {
             if (uiState is ViewerUiState.Ready) {
+                IconButton(onClick = onAnnotate) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.action_annotate),
+                        tint = if (annotateActive) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         Icons.Default.Search,
@@ -480,6 +597,34 @@ private fun printDocument(context: Context, viewModel: ViewerViewModel) {
     val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
     val name = file.name.ifBlank { "document.pdf" }
     printManager.print(name, PdfPrintAdapter(file, name), null)
+}
+
+@Composable
+private fun NoteDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.note_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(stringResource(R.string.note_dialog_label)) },
+                minLines = 3,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) {
+                Text(stringResource(R.string.action_add))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

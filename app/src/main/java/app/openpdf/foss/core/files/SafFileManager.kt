@@ -16,15 +16,26 @@ import javax.inject.Singleton
 class SafFileManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    /** Persists read permission when the provider allows it; returns whether it stuck. */
-    fun tryPersistReadPermission(uri: Uri): Boolean = try {
-        context.contentResolver.takePersistableUriPermission(
-            uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION,
-        )
-        true
-    } catch (_: SecurityException) {
-        false
+    /** Persists read+write permission when possible, read-only otherwise. */
+    fun tryPersistReadPermission(uri: Uri): Boolean {
+        try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+            return true
+        } catch (_: SecurityException) {
+            // Provider may not grant write; fall back to read-only.
+        }
+        return try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+            true
+        } catch (_: SecurityException) {
+            false
+        }
     }
 
     fun displayName(uri: Uri): String {

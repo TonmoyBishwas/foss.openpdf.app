@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,10 +37,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import app.openpdf.foss.core.pdf.PdfDocumentSession
+import app.openpdf.foss.core.pdf.model.InkStroke
 import app.openpdf.foss.core.pdf.model.NormalizedRect
 import app.openpdf.foss.core.pdf.model.PageSize
 import app.openpdf.foss.ui.theme.Spacing
@@ -69,11 +75,14 @@ private val SepiaColorFilter = ColorFilter.colorMatrix(
     )
 )
 
-/** Per-page overlays: search hits and the active text selection. */
+/** Per-page overlays: search hits, selection, buffered ink, eraser outlines. */
 data class PageOverlays(
     val searchRects: List<NormalizedRect> = emptyList(),
     val currentSearchRects: List<NormalizedRect> = emptyList(),
     val selectionRects: List<NormalizedRect> = emptyList(),
+    val inkStrokes: List<app.openpdf.foss.core.pdf.model.InkStroke> = emptyList(),
+    val inkColor: Long = 0xFF2C3E50L,
+    val annotationOutlines: List<NormalizedRect> = emptyList(),
 )
 
 @Composable
@@ -85,9 +94,13 @@ fun PdfViewport(
     modifier: Modifier = Modifier,
     readingMode: ReadingMode = ReadingMode.NORMAL,
     viewMode: ViewMode = ViewMode.VERTICAL,
+    docVersion: Int = 0,
+    annotationTool: AnnotationTool = AnnotationTool.NONE,
     overlaysForPage: (Int) -> PageOverlays = { PageOverlays() },
     onSelectText: (page: Int, sx: Float, sy: Float, ex: Float, ey: Float) -> Unit = { _, _, _, _, _ -> },
     onClearSelection: () -> Unit = {},
+    onPageTap: (page: Int, x: Float, y: Float) -> Unit = { _, _, _ -> },
+    onInkStroke: (page: Int, stroke: app.openpdf.foss.core.pdf.model.InkStroke) -> Unit = { _, _ -> },
     jumpToPage: Int? = null,
     onJumpHandled: () -> Unit = {},
 ) {
@@ -100,13 +113,15 @@ fun PdfViewport(
     when (viewMode) {
         ViewMode.VERTICAL -> VerticalViewport(
             session, pageSizes, initialPage, onPageChanged, modifier,
-            colorFilter, overlaysForPage, onSelectText, onClearSelection,
+            colorFilter, docVersion, annotationTool, overlaysForPage,
+            onSelectText, onClearSelection, onPageTap, onInkStroke,
             jumpToPage, onJumpHandled,
         )
 
         ViewMode.HORIZONTAL -> HorizontalViewport(
             session, pageSizes, initialPage, onPageChanged, modifier,
-            colorFilter, overlaysForPage, onSelectText, onClearSelection,
+            colorFilter, docVersion, annotationTool, overlaysForPage,
+            onSelectText, onClearSelection, onPageTap, onInkStroke,
             jumpToPage, onJumpHandled,
         )
     }
@@ -120,9 +135,13 @@ private fun VerticalViewport(
     onPageChanged: (Int) -> Unit,
     modifier: Modifier,
     colorFilter: ColorFilter?,
+    docVersion: Int,
+    annotationTool: AnnotationTool,
     overlaysForPage: (Int) -> PageOverlays,
     onSelectText: (Int, Float, Float, Float, Float) -> Unit,
     onClearSelection: () -> Unit,
+    onPageTap: (Int, Float, Float) -> Unit,
+    onInkStroke: (Int, app.openpdf.foss.core.pdf.model.InkStroke) -> Unit,
     jumpToPage: Int?,
     onJumpHandled: () -> Unit,
 ) {
@@ -173,8 +192,12 @@ private fun VerticalViewport(
                         aspectRatio = pageSizes[index].aspectRatio,
                         renderWidthPx = renderWidthPx,
                         colorFilter = colorFilter,
+                        docVersion = docVersion,
+                        annotationTool = annotationTool,
                         overlays = overlaysForPage(index),
                         onSelectText = onSelectText,
+                        onPageTap = onPageTap,
+                        onInkStroke = onInkStroke,
                     )
                 }
             }
@@ -190,9 +213,13 @@ private fun HorizontalViewport(
     onPageChanged: (Int) -> Unit,
     modifier: Modifier,
     colorFilter: ColorFilter?,
+    docVersion: Int,
+    annotationTool: AnnotationTool,
     overlaysForPage: (Int) -> PageOverlays,
     onSelectText: (Int, Float, Float, Float, Float) -> Unit,
     onClearSelection: () -> Unit,
+    onPageTap: (Int, Float, Float) -> Unit,
+    onInkStroke: (Int, app.openpdf.foss.core.pdf.model.InkStroke) -> Unit,
     jumpToPage: Int?,
     onJumpHandled: () -> Unit,
 ) {
@@ -223,8 +250,12 @@ private fun HorizontalViewport(
                     aspectRatio = pageSizes[index].aspectRatio,
                     renderWidthPx = viewportWidthPx,
                     colorFilter = colorFilter,
+                    docVersion = docVersion,
+                    annotationTool = annotationTool,
                     overlays = overlaysForPage(index),
                     onSelectText = onSelectText,
+                    onPageTap = onPageTap,
+                    onInkStroke = onInkStroke,
                 )
             }
         }
@@ -238,36 +269,80 @@ private fun PdfPageItem(
     aspectRatio: Float,
     renderWidthPx: Int,
     colorFilter: ColorFilter?,
+    docVersion: Int,
+    annotationTool: AnnotationTool,
     overlays: PageOverlays,
     onSelectText: (Int, Float, Float, Float, Float) -> Unit,
+    onPageTap: (Int, Float, Float) -> Unit,
+    onInkStroke: (Int, InkStroke) -> Unit,
 ) {
-    val bitmap by produceState<Bitmap?>(initialValue = null, session, pageIndex, renderWidthPx) {
+    val bitmap by produceState<Bitmap?>(
+        initialValue = null, session, pageIndex, renderWidthPx, docVersion,
+    ) {
         value = runCatching { PageBitmapCache.getOrRender(session, pageIndex, renderWidthPx) }
             .getOrNull()
     }
-    Box(
-        modifier = Modifier
-            .aspectRatio(if (aspectRatio > 0f) aspectRatio else 0.7071f)
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-            .pointerInput(pageIndex) {
-                var start: Offset? = null
-                detectDragGesturesAfterLongPress(
-                    onDragStart = { offset -> start = offset },
-                    onDrag = { change, _ ->
-                        val s = start ?: return@detectDragGesturesAfterLongPress
+    var liveStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
+
+    var baseModifier = Modifier
+        .aspectRatio(if (aspectRatio > 0f) aspectRatio else 0.7071f)
+        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+
+    baseModifier = when (annotationTool) {
+        AnnotationTool.INK -> baseModifier.pointerInput(pageIndex, annotationTool) {
+            detectDragGestures(
+                onDragStart = { offset -> liveStroke = listOf(offset) },
+                onDrag = { change, _ -> liveStroke = liveStroke + change.position },
+                onDragEnd = {
+                    if (liveStroke.size > 1) {
                         val w = size.width.toFloat()
                         val h = size.height.toFloat()
-                        onSelectText(
+                        onInkStroke(
                             pageIndex,
-                            (s.x / w).coerceIn(0f, 1f),
-                            (s.y / h).coerceIn(0f, 1f),
-                            (change.position.x / w).coerceIn(0f, 1f),
-                            (change.position.y / h).coerceIn(0f, 1f),
+                            InkStroke(
+                                liveStroke.map {
+                                    (it.x / w).coerceIn(0f, 1f) to (it.y / h).coerceIn(0f, 1f)
+                                }
+                            ),
                         )
-                    },
+                    }
+                    liveStroke = emptyList()
+                },
+                onDragCancel = { liveStroke = emptyList() },
+            )
+        }
+
+        AnnotationTool.NOTE, AnnotationTool.ERASE -> baseModifier.pointerInput(pageIndex, annotationTool) {
+            detectTapGestures { offset ->
+                onPageTap(
+                    pageIndex,
+                    offset.x / size.width.toFloat(),
+                    offset.y / size.height.toFloat(),
                 )
-            },
-    ) {
+            }
+        }
+
+        AnnotationTool.NONE -> baseModifier.pointerInput(pageIndex, annotationTool) {
+            var start: Offset? = null
+            detectDragGesturesAfterLongPress(
+                onDragStart = { offset -> start = offset },
+                onDrag = { change, _ ->
+                    val s = start ?: return@detectDragGesturesAfterLongPress
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    onSelectText(
+                        pageIndex,
+                        (s.x / w).coerceIn(0f, 1f),
+                        (s.y / h).coerceIn(0f, 1f),
+                        (change.position.x / w).coerceIn(0f, 1f),
+                        (change.position.y / h).coerceIn(0f, 1f),
+                    )
+                },
+            )
+        }
+    }
+
+    Box(modifier = baseModifier) {
         bitmap?.let {
             Image(
                 bitmap = it.asImageBitmap(),
@@ -277,20 +352,17 @@ private fun PdfPageItem(
                 colorFilter = colorFilter,
             )
         }
-        if (overlays.searchRects.isNotEmpty() ||
-            overlays.currentSearchRects.isNotEmpty() ||
-            overlays.selectionRects.isNotEmpty()
-        ) {
-            OverlayCanvas(overlays)
-        }
+        OverlayCanvas(overlays, liveStroke)
     }
 }
 
 @Composable
-private fun OverlayCanvas(overlays: PageOverlays) {
+private fun OverlayCanvas(overlays: PageOverlays, liveStroke: List<Offset>) {
     val hitColor = Color(0x66FFC107)
     val currentColor = Color(0x99FF9800)
     val selectionColor = Color(0x552C3E50)
+    val outlineColor = Color(0xFFBA1A1A)
+    val inkColor = Color(overlays.inkColor.toInt()).copy(alpha = 1f)
     Canvas(modifier = Modifier.fillMaxSize()) {
         fun drawRects(rects: List<NormalizedRect>, color: Color) {
             rects.forEach { r ->
@@ -307,5 +379,34 @@ private fun OverlayCanvas(overlays: PageOverlays) {
         drawRects(overlays.searchRects, hitColor)
         drawRects(overlays.currentSearchRects, currentColor)
         drawRects(overlays.selectionRects, selectionColor)
+
+        // Eraser mode: outline existing annotations so they can be targeted.
+        overlays.annotationOutlines.forEach { r ->
+            drawRect(
+                color = outlineColor,
+                topLeft = Offset(r.left * size.width, r.top * size.height),
+                size = Size(
+                    (r.right - r.left) * size.width,
+                    (r.bottom - r.top) * size.height,
+                ),
+                style = Stroke(width = 3f),
+            )
+        }
+
+        val strokeStyle = Stroke(width = size.width * 0.004f, cap = StrokeCap.Round)
+        fun drawStrokePath(points: List<Offset>) {
+            if (points.size < 2) return
+            val path = Path().apply {
+                moveTo(points.first().x, points.first().y)
+                points.drop(1).forEach { lineTo(it.x, it.y) }
+            }
+            drawPath(path, color = inkColor, style = strokeStyle)
+        }
+        // Buffered (uncommitted) strokes in normalized coords.
+        overlays.inkStrokes.forEach { stroke ->
+            drawStrokePath(stroke.points.map { Offset(it.first * size.width, it.second * size.height) })
+        }
+        // Stroke currently being drawn, in pixel coords.
+        drawStrokePath(liveStroke)
     }
 }

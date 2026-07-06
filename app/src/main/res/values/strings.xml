@@ -35,6 +35,20 @@
     <string name="action_share">Share</string>
     <string name="action_print">Print</string>
 
+    <string name="action_annotate">Annotate</string>
+    <string name="action_save">Save</string>
+    <string name="action_add">Add</string>
+    <string name="action_close_annotate">Close annotation tools</string>
+    <string name="tool_note">Sticky note</string>
+    <string name="tool_ink">Draw</string>
+    <string name="tool_erase">Erase annotation</string>
+    <string name="tool_highlight">Highlight</string>
+    <string name="tool_underline">Underline</string>
+    <string name="tool_strikethrough">Strikethrough</string>
+    <string name="annotate_unsaved">Unsaved changes</string>
+    <string name="note_dialog_title">Add note</string>
+    <string name="note_dialog_label">Note text</string>
+
     <string name="search_hint">Search in document</string>
     <string name="search_prev">Previous match</string>
     <string name="search_next">Next match</string>
