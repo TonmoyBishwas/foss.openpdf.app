@@ -36,6 +36,28 @@ import javax.inject.Inject
 
 class MuPdfEngine @Inject constructor() : PdfEngine {
 
+    override suspend fun merge(sourcePaths: List<String>, outFilePath: String): Unit =
+        withContext(Dispatchers.IO) {
+            val out = PDFDocument()
+            try {
+                var insertAt = 0
+                sourcePaths.forEach { path ->
+                    val src = Document.openDocument(path) as? PDFDocument
+                        ?: throw PdfOpenException("Not a PDF: $path")
+                    try {
+                        for (i in 0 until src.countPages()) {
+                            out.graftPage(insertAt++, src, i)
+                        }
+                    } finally {
+                        src.destroy()
+                    }
+                }
+                out.save(outFilePath, "compress")
+            } finally {
+                out.destroy()
+            }
+        }
+
     override suspend fun open(filePath: String, password: String?): PdfDocumentSession {
         // MuPDF is not thread-safe; every call for a given document must run on
         // the same single-threaded executor the document was opened on.
@@ -450,6 +472,29 @@ internal class MuPdfSession(
     override suspend fun saveTo(filePath: String): Unit = withContext(dispatcher) {
         val pdf = document as? PDFDocument ?: error("Document is not editable")
         pdf.save(filePath, "compress")
+    }
+
+    override suspend fun exportArrangement(
+        order: List<Int>,
+        rotations: Map<Int, Int>,
+        outFilePath: String,
+    ): Unit = withContext(dispatcher) {
+        val src = document as? PDFDocument ?: error("Document is not editable")
+        val out = PDFDocument()
+        try {
+            order.forEachIndexed { destIndex, srcIndex ->
+                out.graftPage(destIndex, src, srcIndex)
+                val extra = rotations[srcIndex] ?: 0
+                if (extra != 0) {
+                    val pageObj = out.findPage(destIndex)
+                    val current = pageObj.get("Rotate")?.asInteger() ?: 0
+                    pageObj.put("Rotate", (current + extra).mod(360))
+                }
+            }
+            out.save(outFilePath, "compress")
+        } finally {
+            out.destroy()
+        }
     }
 
     private fun Quad.toNormalizedRect(bounds: com.artifex.mupdf.fitz.Rect): NormalizedRect {

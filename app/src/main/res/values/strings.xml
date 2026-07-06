@@ -58,6 +58,20 @@
     <string name="form_field_title">Fill form field</string>
     <string name="form_field_value">Value</string>
     <string name="action_apply">Apply</string>
+    <string name="action_ok">OK</string>
+
+    <string name="organize_title">Organize pages</string>
+    <string name="organize_rotate">Rotate 90°</string>
+    <string name="organize_duplicate">Duplicate</string>
+    <string name="organize_delete">Delete</string>
+    <string name="organize_move">Move</string>
+    <string name="organize_extract">Extract to new PDF</string>
+    <string name="organize_move_hint">Tap where the page should go</string>
+    <string name="tool_merge">Merge PDFs</string>
+    <string name="tool_split">Split PDF</string>
+    <string name="split_dialog_title">Extract pages</string>
+    <string name="split_dialog_hint">Document has %1$d pages. Enter pages like 1-3, 7, 9-12.</string>
+    <string name="split_dialog_label">Pages</string>
 
     <string name="search_hint">Search in document</string>
     <string name="search_prev">Previous match</string>

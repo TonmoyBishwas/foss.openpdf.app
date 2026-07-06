@@ -30,6 +30,9 @@ interface PdfEngine {
      * @throws PdfOpenException when the file is not a readable PDF
      */
     suspend fun open(filePath: String, password: String? = null): PdfDocumentSession
+
+    /** Merges [sourcePaths] (in order) into a new PDF at [outFilePath]. */
+    suspend fun merge(sourcePaths: List<String>, outFilePath: String)
 }
 
 /**
@@ -109,6 +112,13 @@ interface PdfDocumentSession : AutoCloseable {
 
     /** Writes the current document state (including edits) to [filePath]. */
     suspend fun saveTo(filePath: String)
+
+    /**
+     * Writes a new PDF at [outFilePath] containing this document's pages in
+     * [order] (indices may repeat for duplication and omit for deletion),
+     * with optional extra clockwise [rotations] (degrees) per source index.
+     */
+    suspend fun exportArrangement(order: List<Int>, rotations: Map<Int, Int>, outFilePath: String)
 
     override fun close()
 }

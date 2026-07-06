@@ -18,9 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CallMerge
+import androidx.compose.material.icons.filled.CallSplit
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,12 +31,19 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -54,11 +64,39 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val recents by viewModel.recents.collectAsStateWithLifecycle()
+    val toolState by viewModel.toolState.collectAsStateWithLifecycle()
 
     val openDocumentLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let(onOpenDocument)
+    }
+
+    val mergeSourcesLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris -> if (uris.isNotEmpty()) viewModel.onMergeSourcesPicked(uris) }
+
+    val mergeTargetLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target -> if (target != null) viewModel.mergeInto(target) else viewModel.dismissTool() }
+
+    val splitSourceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(viewModel::onSplitSourcePicked) }
+
+    var splitRanges by remember { mutableStateOf("") }
+    val splitTargetLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target ->
+        if (target != null) viewModel.splitInto(splitRanges, target)
+        else viewModel.dismissTool()
+    }
+
+    // Merge: once sources are picked, immediately ask where to save.
+    LaunchedEffect(toolState.pendingMergeSources) {
+        if (toolState.pendingMergeSources.isNotEmpty()) {
+            mergeTargetLauncher.launch("merged.pdf")
+        }
     }
 
     Scaffold(
@@ -92,24 +130,124 @@ fun HomeScreen(
             )
         },
     ) { padding ->
-        if (recents.isEmpty()) {
-            EmptyState(modifier = Modifier.fillMaxSize().padding(padding))
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(Spacing.screenEdge),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                items(recents, key = { it.uri }) { recent ->
-                    RecentFileCard(
-                        recent = recent,
-                        onClick = { onOpenDocument(Uri.parse(recent.uri)) },
-                        onRemove = { viewModel.removeRecent(recent.uri) },
-                    )
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            ToolsRow(
+                enabled = !toolState.busy,
+                onMerge = { mergeSourcesLauncher.launch(arrayOf("application/pdf")) },
+                onSplit = { splitSourceLauncher.launch(arrayOf("application/pdf")) },
+            )
+            if (recents.isEmpty()) {
+                EmptyState(modifier = Modifier.fillMaxSize())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = Spacing.screenEdge,
+                        end = Spacing.screenEdge,
+                        bottom = Spacing.screenEdge,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    items(recents, key = { it.uri }) { recent ->
+                        RecentFileCard(
+                            recent = recent,
+                            onClick = { onOpenDocument(Uri.parse(recent.uri)) },
+                            onRemove = { viewModel.removeRecent(recent.uri) },
+                        )
+                    }
                 }
             }
         }
     }
+
+    // Split: ranges dialog once the source's page count is known.
+    if (toolState.pendingSplitSource != null) {
+        SplitRangesDialog(
+            pageCount = toolState.pendingSplitPageCount,
+            onConfirm = { ranges ->
+                splitRanges = ranges
+                splitTargetLauncher.launch("split.pdf")
+            },
+            onDismiss = viewModel::dismissTool,
+        )
+    }
+
+    toolState.message?.let { message ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissTool,
+            title = { Text(message) },
+            confirmButton = {
+                TextButton(onClick = viewModel::dismissTool) {
+                    Text(stringResource(R.string.action_ok))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ToolsRow(
+    enabled: Boolean,
+    onMerge: () -> Unit,
+    onSplit: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.screenEdge, vertical = Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        OutlinedButton(onClick = onMerge, enabled = enabled) {
+            Icon(Icons.Default.CallMerge, contentDescription = null)
+            Text(
+                stringResource(R.string.tool_merge),
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
+        }
+        OutlinedButton(onClick = onSplit, enabled = enabled) {
+            Icon(Icons.Default.CallSplit, contentDescription = null)
+            Text(
+                stringResource(R.string.tool_split),
+                modifier = Modifier.padding(start = Spacing.xs),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SplitRangesDialog(
+    pageCount: Int,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var ranges by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.split_dialog_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.split_dialog_hint, pageCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = Spacing.sm),
+                )
+                OutlinedTextField(
+                    value = ranges,
+                    onValueChange = { ranges = it },
+                    label = { Text(stringResource(R.string.split_dialog_label)) },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(ranges) }, enabled = ranges.isNotBlank()) {
+                Text(stringResource(R.string.action_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

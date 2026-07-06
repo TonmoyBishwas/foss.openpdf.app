@@ -10,3 +10,6 @@ data object SettingsRoute
 
 @Serializable
 data class ViewerRoute(val uri: String)
+
+@Serializable
+data class OrganizeRoute(val uri: String)

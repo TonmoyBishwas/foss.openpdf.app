@@ -27,11 +27,18 @@ class DocumentSaver @Inject constructor(
 
     /** @return true when saved; throws [SaveFailedException] on any failure. */
     suspend fun saveTo(session: PdfDocumentSession, target: Uri): Boolean =
+        saveWith(target) { tempPath -> session.saveTo(tempPath) }
+
+    /**
+     * Runs [producer] to write a PDF into a temp path, verifies the result
+     * re-opens, then streams it over [target].
+     */
+    suspend fun saveWith(target: Uri, producer: suspend (tempPath: String) -> Unit): Boolean =
         withContext(Dispatchers.IO) {
             val dir = File(context.cacheDir, "exports").apply { mkdirs() }
             val temp = File(dir, "save-${System.nanoTime()}.pdf")
             try {
-                session.saveTo(temp.absolutePath)
+                producer(temp.absolutePath)
 
                 // Corruption guard: the temp file must round-trip.
                 try {

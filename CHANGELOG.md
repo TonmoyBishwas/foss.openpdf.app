@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.0
+
+- Organize pages: thumbnail grid with multi-select — rotate, duplicate,
+  delete, move (reorder), and extract pages to a new PDF
+- Merge multiple PDFs into one (Home → Merge PDFs)
+- Split / extract page ranges like "1-3, 7" to a new PDF (Home → Split PDF)
+- All page operations build a fresh verified file before touching anything
+
 ## v0.4.0
 
 - Fill & sign: tap interactive form fields to fill them (text, checkboxes,

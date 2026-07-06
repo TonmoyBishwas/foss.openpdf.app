@@ -79,6 +79,7 @@ import app.openpdf.foss.ui.theme.Spacing
 @Composable
 fun ViewerScreen(
     onBack: () -> Unit,
+    onOrganize: (uri: String) -> Unit = {},
     viewModel: ViewerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -176,6 +177,7 @@ fun ViewerScreen(
                         viewModel.setAnnotationToolbarVisible(!annotationState.toolbarVisible)
                     },
                     annotateActive = annotationState.toolbarVisible,
+                    onOrganize = { onOrganize(viewModel.uri.toString()) },
                 )
             }
         },
@@ -477,6 +479,7 @@ private fun ViewerTopBar(
     onToggleViewMode: () -> Unit,
     onAnnotate: () -> Unit,
     annotateActive: Boolean,
+    onOrganize: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -573,6 +576,10 @@ private fun ViewerTopBar(
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_view_mode)) },
                             onClick = onToggleViewMode,
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.organize_title)) },
+                            onClick = onOrganize,
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.action_share)) },
