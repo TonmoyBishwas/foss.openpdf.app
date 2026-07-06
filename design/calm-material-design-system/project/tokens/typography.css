@@ -1,0 +1,44 @@
+/* Calm Material — typography tokens
+   Two fonts, strict roles:
+   · Display: "Doto" (dot matrix, weight 700) — headlines (32/24) and large
+     numeric readouts ONLY. Never body, titles, labels, or anything under 24px.
+   · UI: "Hanken Grotesk" — everything else. System font is the fallback.
+   Weights: display 700 · heading/title 600 · label 500 · body 400.
+   Display sizes use 0 tracking (dots need air); body uses 1.5 line-height. */
+
+@import url("https://fonts.googleapis.com/css2?family=Doto:wght@700&family=Hanken+Grotesk:wght@400;500;600&display=swap");
+
+:root {
+  --font-display: "Doto", system-ui, sans-serif;
+  --font-ui: "Hanken Grotesk", system-ui, "Roboto", "Segoe UI", -apple-system, sans-serif;
+
+  /* Sizes */
+  --type-headline-lg-size: 32px;   /* screen hero titles, big numbers */
+  --type-headline-md-size: 24px;   /* section titles */
+  --type-title-size: 18px;         /* app bar, dialog titles */
+  --type-body-lg-size: 16px;       /* primary reading text */
+  --type-body-md-size: 14px;       /* secondary text (use --text-secondary) */
+  --type-label-size: 16px;         /* buttons, tabs */
+  --type-caption-size: 12px;       /* timestamps, fine print (tertiary) */
+
+  /* Weights */
+  --weight-display: 700;           /* Doto only — too light to read below 700 */
+  --weight-heading: 600;
+  --weight-label: 500;
+  --weight-body: 400;
+
+  /* Tracking & leading */
+  --tracking-display: 0;           /* dot matrix: never negative-track */
+  --tracking-normal: 0;
+  --leading-body: 1.5;
+  --leading-heading: 1.25;
+
+  /* Composite shorthands (font: …) */
+  --type-headline-lg: var(--weight-display) var(--type-headline-lg-size)/var(--leading-heading) var(--font-display);
+  --type-headline-md: var(--weight-display) var(--type-headline-md-size)/var(--leading-heading) var(--font-display);
+  --type-title: var(--weight-heading) var(--type-title-size)/var(--leading-heading) var(--font-ui);
+  --type-body-lg: var(--weight-body) var(--type-body-lg-size)/var(--leading-body) var(--font-ui);
+  --type-body-md: var(--weight-body) var(--type-body-md-size)/var(--leading-body) var(--font-ui);
+  --type-label: var(--weight-label) var(--type-label-size)/1.2 var(--font-ui);
+  --type-caption: var(--weight-body) var(--type-caption-size)/1.35 var(--font-ui);
+}

@@ -1,0 +1,9 @@
+/* Calm Material — motion tokens (intentional addition; M3 standard curves).
+   Motion is quiet: short fades and gentle position eases. No bounces or springs. */
+
+:root {
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1); /* @kind other */
+  --duration-quick: 150ms; /* @kind other */ /* state layers, hovers, toggles */
+  --duration-standard: 250ms; /* @kind other */ /* expansions, dialogs, theme switch */
+}

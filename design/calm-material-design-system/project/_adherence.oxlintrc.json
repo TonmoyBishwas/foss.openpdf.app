@@ -1,0 +1,331 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/actions/**",
+              "components/containment/**",
+              "components/forms/**",
+              "components/icons/**",
+              "components/navigation/**",
+              "ui_kits/lensbite/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Doto|Hanken Grotesk|Material Symbols Rounded))/i]",
+        "message": "Font not provided by the design system. Available: Doto, Hanken Grotesk, Material Symbols Rounded."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|icon|disabled|onClick|type|style|children|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: variant, icon, disabled, onClick, type, style, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:filled|tonal|text)$/]",
+        "message": "<Button> variant must be one of 'filled' | 'tonal' | 'text'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='type'] > Literal[value!=/^(?:button|submit)$/]",
+        "message": "<Button> type must be one of 'button' | 'submit'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|padding|onClick|style|children|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: variant, padding, onClick, style, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:filled|outlined)$/]",
+        "message": "<Card> variant must be one of 'filled' | 'outlined'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Chip'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|selected|disabled|onClick|style|children|key|ref|className|style|children)$/]",
+        "message": "<Chip> doesn't accept that prop. Declared props: icon, selected, disabled, onClick, style, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Dialog'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|title|actions|style|children|key|ref|className|style|children)$/]",
+        "message": "<Dialog> doesn't accept that prop. Declared props: open, onClose, title, actions, style, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Icon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|fill|color|style|key|ref|className|style|children)$/]",
+        "message": "<Icon> doesn't accept that prop. Declared props: name, size, fill, color, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IconButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|variant|selected|disabled|onClick|label|style|key|ref|className|style|children)$/]",
+        "message": "<IconButton> doesn't accept that prop. Declared props: icon, variant, selected, disabled, onClick, label, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IconButton'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:standard|filled|tonal)$/]",
+        "message": "<IconButton> variant must be one of 'standard' | 'filled' | 'tonal'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ListTile'] > JSXAttribute > JSXIdentifier[name!=/^(?:leading|title|subtitle|trailing|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<ListTile> doesn't accept that prop. Declared props: leading, title, subtitle, trailing, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='NavigationBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:items|activeIndex|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<NavigationBar> doesn't accept that prop. Declared props: items, activeIndex, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Switch'] > JSXAttribute > JSXIdentifier[name!=/^(?:checked|onChange|disabled|label|style|key|ref|className|style|children)$/]",
+        "message": "<Switch> doesn't accept that prop. Declared props: checked, onChange, disabled, label, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|label|value|onChange|placeholder|supportingText|error|leadingIcon|type|disabled|style|key|ref|className|style|children)$/]",
+        "message": "<TextField> doesn't accept that prop. Declared props: variant, label, value, onChange, placeholder, supportingText, error, leadingIcon, type, disabled, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextField'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:outlined|filled)$/]",
+        "message": "<TextField> variant must be one of 'outlined' | 'filled'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TopBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|leading|onLeading|actions|style|key|ref|className|style|children)$/]",
+        "message": "<TopBar> doesn't accept that prop. Declared props: title, leading, onLeading, actions, style."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "Button": {
+        "replaces": []
+      },
+      "Card": {
+        "replaces": []
+      },
+      "Chip": {
+        "replaces": []
+      },
+      "Dialog": {
+        "replaces": []
+      },
+      "Icon": {
+        "replaces": []
+      },
+      "IconButton": {
+        "replaces": []
+      },
+      "ListTile": {
+        "replaces": []
+      },
+      "NavigationBar": {
+        "replaces": []
+      },
+      "Switch": {
+        "replaces": []
+      },
+      "TextField": {
+        "replaces": []
+      },
+      "TopBar": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--border-hairline",
+      "--border-width-hairline",
+      "--button-pad-x",
+      "--button-pad-y",
+      "--card-pad",
+      "--color-error",
+      "--color-error-container",
+      "--color-on-error",
+      "--color-on-error-container",
+      "--color-on-primary",
+      "--color-on-primary-container",
+      "--color-on-secondary",
+      "--color-on-secondary-container",
+      "--color-on-surface",
+      "--color-on-surface-variant",
+      "--color-outline",
+      "--color-outline-variant",
+      "--color-primary",
+      "--color-primary-container",
+      "--color-secondary",
+      "--color-secondary-container",
+      "--color-surface",
+      "--color-surface-container",
+      "--color-surface-container-high",
+      "--color-surface-container-highest",
+      "--color-surface-container-low",
+      "--color-surface-container-lowest",
+      "--disabled-fill",
+      "--disabled-text",
+      "--duration-quick",
+      "--duration-standard",
+      "--ease-decelerate",
+      "--ease-standard",
+      "--font-display",
+      "--font-ui",
+      "--icon-size",
+      "--leading-body",
+      "--leading-heading",
+      "--radius-card",
+      "--radius-control",
+      "--radius-pill",
+      "--screen-pad",
+      "--screen-pad-spacious",
+      "--section-gap",
+      "--seed",
+      "--shadow-none",
+      "--space-12",
+      "--space-16",
+      "--space-24",
+      "--space-32",
+      "--space-4",
+      "--space-48",
+      "--space-8",
+      "--state-hover",
+      "--state-press",
+      "--surface-card",
+      "--surface-page",
+      "--tap-target",
+      "--text-on-brand",
+      "--text-primary",
+      "--text-secondary",
+      "--text-tertiary",
+      "--tracking-display",
+      "--tracking-normal",
+      "--type-body-lg",
+      "--type-body-lg-size",
+      "--type-body-md",
+      "--type-body-md-size",
+      "--type-caption",
+      "--type-caption-size",
+      "--type-headline-lg",
+      "--type-headline-lg-size",
+      "--type-headline-md",
+      "--type-headline-md-size",
+      "--type-label",
+      "--type-label-size",
+      "--type-title",
+      "--type-title-size",
+      "--weight-body",
+      "--weight-display",
+      "--weight-heading",
+      "--weight-label"
+    ],
+    "tokenKinds": {
+      "--seed": "color",
+      "--color-primary": "color",
+      "--color-on-primary": "color",
+      "--color-primary-container": "color",
+      "--color-on-primary-container": "color",
+      "--color-secondary": "color",
+      "--color-on-secondary": "color",
+      "--color-secondary-container": "color",
+      "--color-on-secondary-container": "color",
+      "--color-surface": "color",
+      "--color-surface-container-lowest": "color",
+      "--color-surface-container-low": "color",
+      "--color-surface-container": "color",
+      "--color-surface-container-high": "color",
+      "--color-surface-container-highest": "color",
+      "--color-on-surface": "color",
+      "--color-on-surface-variant": "color",
+      "--color-outline": "color",
+      "--color-outline-variant": "color",
+      "--color-error": "color",
+      "--color-on-error": "color",
+      "--color-error-container": "color",
+      "--color-on-error-container": "color",
+      "--surface-page": "color",
+      "--surface-card": "color",
+      "--border-hairline": "color",
+      "--text-primary": "font",
+      "--text-secondary": "font",
+      "--text-tertiary": "font",
+      "--text-on-brand": "font",
+      "--state-hover": "color",
+      "--state-press": "color",
+      "--disabled-fill": "color",
+      "--disabled-text": "font",
+      "--font-display": "font",
+      "--font-ui": "font",
+      "--type-headline-lg-size": "font",
+      "--type-headline-md-size": "font",
+      "--type-title-size": "font",
+      "--type-body-lg-size": "font",
+      "--type-body-md-size": "font",
+      "--type-label-size": "font",
+      "--type-caption-size": "font",
+      "--weight-display": "font",
+      "--weight-heading": "font",
+      "--weight-label": "font",
+      "--weight-body": "font",
+      "--tracking-display": "font",
+      "--tracking-normal": "font",
+      "--leading-body": "font",
+      "--leading-heading": "font",
+      "--type-headline-lg": "font",
+      "--type-headline-md": "font",
+      "--type-title": "font",
+      "--type-body-lg": "font",
+      "--type-body-md": "font",
+      "--type-label": "font",
+      "--type-caption": "font",
+      "--space-4": "spacing",
+      "--space-8": "spacing",
+      "--space-12": "spacing",
+      "--space-16": "spacing",
+      "--space-24": "spacing",
+      "--space-32": "spacing",
+      "--space-48": "spacing",
+      "--screen-pad": "spacing",
+      "--screen-pad-spacious": "spacing",
+      "--section-gap": "spacing",
+      "--card-pad": "spacing",
+      "--button-pad-x": "spacing",
+      "--button-pad-y": "spacing",
+      "--icon-size": "spacing",
+      "--tap-target": "spacing",
+      "--radius-control": "radius",
+      "--radius-card": "radius",
+      "--radius-pill": "radius",
+      "--shadow-none": "shadow",
+      "--border-width-hairline": "spacing",
+      "--ease-standard": "other",
+      "--ease-decelerate": "other",
+      "--duration-quick": "other",
+      "--duration-standard": "other"
+    },
+    "fontFamilies": [
+      "Doto",
+      "Hanken Grotesk",
+      "Material Symbols Rounded"
+    ]
+  }
+}

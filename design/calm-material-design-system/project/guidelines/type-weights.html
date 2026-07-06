@@ -1,0 +1,20 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Weight convention" subtitle="700 display (Doto only) · 600 heading · 500 label · 400 body" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-ui); background: var(--color-surface); color: var(--text-primary); display: flex; gap: 16px; align-items: center; }
+  .w { flex: 1; background: var(--surface-card); border-radius: var(--radius-control); padding: 16px; display: flex; flex-direction: column; gap: 2px; }
+  .n { font-size: 24px; line-height: 1.2; }
+  .l { font: var(--type-caption); color: var(--text-secondary); }
+</style>
+</head>
+<body>
+  <div class="w"><span class="n" style="font-family: var(--font-display); font-weight: 700;">Display 700</span><span class="l">Doto only — headlines, big numbers</span></div>
+  <div class="w"><span class="n" style="font-weight: 600;">Semibold 600</span><span class="l">titles — confident, not heavy</span></div>
+  <div class="w"><span class="n" style="font-weight: 500;">Medium 500</span><span class="l">buttons, labels, tabs</span></div>
+  <div class="w"><span class="n" style="font-weight: 400;">Regular 400</span><span class="l">body text</span></div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Primary & secondary" subtitle="One seed (#2C3E50) generates every role via the M3 tonal algorithm" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; font-family: var(--font-ui); background: var(--color-surface); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; height: 92px; border-radius: var(--radius-control); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; }
+  .sw b { font-weight: 600; font-size: 13px; }
+  .hex { opacity: 0.7; font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--color-primary); color: var(--color-on-primary);"><b>primary</b><span class="hex">#2C3E50 · seed</span></div>
+    <div class="sw" style="background: var(--color-primary-container); color: var(--color-on-primary-container);"><b>primary-container</b><span class="hex">#D2E4F7</span></div>
+    <div class="sw" style="background: var(--color-secondary); color: var(--color-on-secondary);"><b>secondary</b><span class="hex">#526070</span></div>
+    <div class="sw" style="background: var(--color-secondary-container); color: var(--color-on-secondary-container);"><b>secondary-container</b><span class="hex">#D6E4F0</span></div>
+  </div>
+</body>
+</html>

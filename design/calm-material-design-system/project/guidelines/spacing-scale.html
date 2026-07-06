@@ -1,0 +1,24 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="8-point grid" subtitle="4 · 8 · 12 · 16 · 24 · 32 · 48 — every margin, pad and gap" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-ui); background: var(--color-surface); color: var(--text-primary); display: flex; align-items: flex-end; gap: 16px; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bar { width: 48px; background: var(--color-primary-container); border: 1px solid var(--color-primary); border-radius: 4px; }
+  .l { font: var(--type-caption); color: var(--text-secondary); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="step"><div class="bar" style="height: 4px;"></div><span class="l">4</span></div>
+  <div class="step"><div class="bar" style="height: 8px;"></div><span class="l">8</span></div>
+  <div class="step"><div class="bar" style="height: 12px;"></div><span class="l">12</span></div>
+  <div class="step"><div class="bar" style="height: 16px;"></div><span class="l">16</span></div>
+  <div class="step"><div class="bar" style="height: 24px;"></div><span class="l">24</span></div>
+  <div class="step"><div class="bar" style="height: 32px;"></div><span class="l">32</span></div>
+  <div class="step"><div class="bar" style="height: 48px;"></div><span class="l">48</span></div>
+  <div style="flex: 1; font: var(--type-body-md); color: var(--text-secondary); padding-left: 8px;">Screen edge 16 · card gap 16 · inside-card 16 · button pad 24×16 · icons 24</div>
+</body>
+</html>

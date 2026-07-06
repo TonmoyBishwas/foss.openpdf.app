@@ -1,0 +1,22 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Error" subtitle="The only non-derived accent — used strictly for error states" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; font-family: var(--font-ui); background: var(--color-surface); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; height: 78px; border-radius: var(--radius-control); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; }
+  .sw b { font-weight: 600; font-size: 12px; }
+  .hex { opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--color-error); color: var(--color-on-error);"><b>error</b><span class="hex">#BA1A1A light · #FFB4AB dark</span></div>
+    <div class="sw" style="background: var(--color-error-container); color: var(--color-on-error-container);"><b>error-container</b><span class="hex">#FFDAD6</span></div>
+    <div class="sw" style="background: var(--color-surface-container-highest); color: var(--color-error);"><b>error on card</b><span class="hex">inline validation text</span></div>
+  </div>
+</body>
+</html>

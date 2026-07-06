@@ -1,0 +1,27 @@
+<!-- @dsCard group="Spacing" viewport="700x190" name="Depth — flat, not floating" subtitle="Elevation 0 everywhere; hierarchy via tonal surface steps" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-ui); background: var(--color-surface); display: flex; gap: 24px; }
+  .demo { flex: 1; border-radius: var(--radius-card); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .t { font: var(--type-title); font-size: 15px; color: var(--text-primary); margin: 0; }
+  .s { font: var(--type-body-md); font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .tag { font: var(--type-caption); font-weight: 600; align-self: flex-start; }
+</style>
+</head>
+<body>
+  <div class="demo" style="background: var(--surface-card);">
+    <span class="tag" style="color: var(--color-primary);">✓ DO</span>
+    <p class="t">Tonal step</p>
+    <p class="s">Card is a slightly different shade of the same palette. Optional 1px hairline if more separation is needed.</p>
+  </div>
+  <div class="demo" style="background: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.18);">
+    <span class="tag" style="color: var(--color-error);">✗ DON'T</span>
+    <p class="t">Drop shadow</p>
+    <p class="s">No elevation, ever — not on app bars, buttons or cards. If a platform forces shadows, keep them near-invisible.</p>
+  </div>
+</body>
+</html>

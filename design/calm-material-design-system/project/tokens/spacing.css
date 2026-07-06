@@ -1,0 +1,21 @@
+/* Calm Material — spacing tokens. 8-point grid: 4 · 8 · 12 · 16 · 24 · 32 · 48 */
+
+:root {
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+
+  /* Layout conventions */
+  --screen-pad: var(--space-16);          /* compact screens (24 for spacious) */
+  --screen-pad-spacious: var(--space-24);
+  --section-gap: var(--space-16);         /* between cards/sections */
+  --card-pad: var(--space-16);            /* inside cards */
+  --button-pad-x: var(--space-24);
+  --button-pad-y: var(--space-16);
+  --icon-size: 24px;
+  --tap-target: 44px;                     /* minimum hit area */
+}

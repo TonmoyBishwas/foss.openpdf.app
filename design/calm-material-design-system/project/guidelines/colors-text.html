@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text opacity ladder" subtitle="Hierarchy by opacity of one color — 100 / 60 / 38% — never separate greys" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-ui); background: var(--color-surface); display: flex; gap: 24px; align-items: center; }
+  .col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .label { font: var(--type-caption); color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+  <div class="col">
+    <span style="font: var(--type-body-lg); color: var(--text-primary);">Primary text — on-surface</span>
+    <span class="label">100% · headlines &amp; body</span>
+  </div>
+  <div class="col">
+    <span style="font: var(--type-body-lg); color: var(--text-secondary);">Secondary text</span>
+    <span class="label">60% · subtitles, captions</span>
+  </div>
+  <div class="col">
+    <span style="font: var(--type-body-lg); color: var(--text-tertiary);">Tertiary text</span>
+    <span class="label">38% · hints, disabled, timestamps</span>
+  </div>
+</body>
+</html>

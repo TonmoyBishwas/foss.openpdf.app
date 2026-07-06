@@ -1,0 +1,24 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Dark theme" subtitle="Lightened brand (#7FA8C9) on tonal near-black — never pure #000" -->
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; font-family: var(--font-ui); background: var(--color-surface); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; height: 92px; border-radius: var(--radius-control); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; }
+  .sw b { font-weight: 600; font-size: 12px; }
+  .hex { opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--color-primary); color: #0B1D2E;"><b>primary</b><span class="hex">#7FA8C9 · lightened</span></div>
+    <div class="sw" style="background: var(--color-surface); color: var(--text-primary); border: 1px solid var(--border-hairline);"><b>surface</b><span class="hex">#121417</span></div>
+    <div class="sw" style="background: var(--color-surface-container-highest); color: var(--text-primary);"><b>container-highest</b><span class="hex">#2A2D31 · cards</span></div>
+    <div class="sw" style="background: var(--color-surface); color: var(--text-primary); border: 1px solid var(--color-outline-variant);"><b>outline-variant</b><span class="hex">#42474E · hairlines</span></div>
+    <div class="sw" style="background: var(--color-error-container); color: var(--color-on-error-container);"><b>error-container</b><span class="hex">#93000A</span></div>
+  </div>
+</body>
+</html>

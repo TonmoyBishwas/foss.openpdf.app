@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon: a rounded document sheet with a folded corner, centered
+     in the adaptive-icon safe zone. Replaced with final art before v1.0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <!-- Sheet body -->
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M38,30
+                L62,30
+                L74,42
+                L74,74
+                Q74,78 70,78
+                L42,78
+                Q38,78 38,74
+                Z" />
+        <!-- Folded corner -->
+        <path
+            android:fillColor="#FFC5C9CE"
+            android:pathData="M62,30 L74,42 L62,42 Z" />
+        <!-- Text lines -->
+        <path
+            android:fillColor="#FF2C3E50"
+            android:pathData="M44,50 L68,50 L68,53 L44,53 Z
+                M44,58 L68,58 L68,61 L44,61 Z
+                M44,66 L60,66 L60,69 L44,69 Z" />
+    </group>
+</vector>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenPDF</string>
+    <string name="action_back">Back</string>
+
+    <string name="home_empty_title">No documents yet</string>
+    <string name="home_empty_subtitle">PDFs you open will show up here</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+</resources>

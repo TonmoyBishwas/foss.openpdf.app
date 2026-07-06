@@ -1,0 +1,11 @@
+/* Calm Material — shape & depth tokens.
+   Elevation is 0 everywhere; depth = tonal surface steps, never drop shadows. */
+
+:root {
+  --radius-control: 12px;  /* buttons, text fields, chips, small controls */
+  --radius-card: 16px;     /* cards, sheets, dialogs, grouped containers */
+  --radius-pill: 999px;    /* avatars, toggles, badges */
+
+  --shadow-none: none;     /* the only sanctioned "shadow" */
+  --border-width-hairline: 1px;
+}

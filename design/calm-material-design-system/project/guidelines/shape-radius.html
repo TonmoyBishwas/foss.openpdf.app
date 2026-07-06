@@ -1,0 +1,28 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Radius" subtitle="12 controls · 16 containers · pill toggles — nothing sharp" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 24px; font-family: var(--font-ui); background: var(--color-surface); color: var(--text-primary); display: flex; gap: 16px; align-items: center; }
+  .shape { display: flex; flex-direction: column; gap: 8px; align-items: center; flex: 1; }
+  .l { font: var(--type-caption); color: var(--text-secondary); text-align: center; }
+  .l b { color: var(--text-primary); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="shape">
+    <div style="width: 120px; height: 56px; background: var(--color-primary); border-radius: var(--radius-control);"></div>
+    <span class="l"><b>12px</b> — buttons, fields, chips</span>
+  </div>
+  <div class="shape">
+    <div style="width: 160px; height: 88px; background: var(--surface-card); border-radius: var(--radius-card);"></div>
+    <span class="l"><b>16px</b> — cards, sheets, dialogs</span>
+  </div>
+  <div class="shape">
+    <div style="width: 88px; height: 44px; background: var(--color-secondary-container); border-radius: var(--radius-pill);"></div>
+    <span class="l"><b>pill</b> — avatars, toggles, badges</span>
+  </div>
+</body>
+</html>

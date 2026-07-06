@@ -1,0 +1,24 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Surface ladder — light" subtitle="Depth via tonal steps, never shadows" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; font-family: var(--font-ui); background: var(--color-surface); }
+  .row { display: flex; gap: 12px; }
+  .sw { flex: 1; height: 92px; border-radius: var(--radius-control); border: 1px solid var(--border-hairline); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--text-primary); }
+  .sw b { font-weight: 600; font-size: 12px; }
+  .hex { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw" style="background: var(--color-surface);"><b>surface</b><span class="hex">#FCFCFD · page</span></div>
+    <div class="sw" style="background: var(--color-surface-container-low);"><b>container-low</b><span class="hex">#F6F7F9</span></div>
+    <div class="sw" style="background: var(--color-surface-container);"><b>container</b><span class="hex">#F0F2F4 · nav bar</span></div>
+    <div class="sw" style="background: var(--color-surface-container-high);"><b>container-high</b><span class="hex">#EBEDF0 · dialogs</span></div>
+    <div class="sw" style="background: var(--color-surface-container-highest);"><b>container-highest</b><span class="hex">#E7E9EC · cards</span></div>
+  </div>
+</body>
+</html>

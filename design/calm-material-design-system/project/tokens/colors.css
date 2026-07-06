@@ -1,0 +1,106 @@
+/* Calm Material — color tokens
+   Seed: #2C3E50 (desaturated navy/slate), Material 3 tonal scheme.
+   Extended roles (containers, secondary, outline, surface ladder) are
+   M3-derived approximations from the seed — regenerate for pixel-exact tones. */
+
+:root {
+  color-scheme: light;
+
+  --seed: #2C3E50;
+
+  /* Primary */
+  --color-primary: #2C3E50;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #D2E4F7;
+  --color-on-primary-container: #0B1D2E;
+
+  /* Secondary (muted slate, derived from seed) */
+  --color-secondary: #526070;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #D6E4F0;
+  --color-on-secondary-container: #0F1D2A;
+
+  /* Surfaces — tonal ladder (depth without shadows) */
+  --color-surface: #FCFCFD;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #F6F7F9;
+  --color-surface-container: #F0F2F4;
+  --color-surface-container-high: #EBEDF0;
+  --color-surface-container-highest: #E7E9EC;
+
+  /* Text & outline */
+  --color-on-surface: #1A1C1E;
+  --color-on-surface-variant: #42474E;
+  --color-outline: #72787E;
+  --color-outline-variant: #C5C9CE;
+
+  /* Error */
+  --color-error: #BA1A1A;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FFDAD6;
+  --color-on-error-container: #410002;
+
+  /* ——— Semantic aliases ——— */
+  --surface-page: var(--color-surface);
+  --surface-card: var(--color-surface-container-highest);
+  --border-hairline: var(--color-outline-variant);
+
+  /* Text opacity ladder: 100 / 60 / 38 */
+  --text-primary: var(--color-on-surface);
+  --text-secondary: color-mix(in srgb, var(--color-on-surface) 60%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-on-surface) 38%, transparent);
+  --text-on-brand: var(--color-on-primary);
+
+  /* State layers (M3): hover 8% · press 10% · disabled fill 12% / text 38% */
+  --state-hover: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+  --state-press: color-mix(in srgb, var(--color-on-surface) 10%, transparent);
+  --disabled-fill: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+  --disabled-text: var(--text-tertiary);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Primary — lightened brand for contrast on dark */
+  --color-primary: #7FA8C9;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #274257;
+  --color-on-primary-container: #D2E4F7;
+
+  --color-secondary: #BAC7D4;
+  --color-on-secondary: #24323F;
+  --color-secondary-container: #3A4855;
+  --color-on-secondary-container: #D6E4F0;
+
+  /* Tonal near-black — never #000000 */
+  --color-surface: #121417;
+  --color-surface-container-lowest: #0D0F11;
+  --color-surface-container-low: #1A1C1F;
+  --color-surface-container: #1E2023;
+  --color-surface-container-high: #24272A;
+  --color-surface-container-highest: #2A2D31;
+
+  --color-on-surface: #E2E2E6;
+  --color-on-surface-variant: #C2C7CE;
+  --color-outline: #8C9198;
+  --color-outline-variant: #42474E;
+
+  --color-error: #FFB4AB;
+  --color-on-error: #690005;
+  --color-error-container: #93000A;
+  --color-on-error-container: #FFDAD6;
+
+  /* Semantic aliases re-declared so var() references re-resolve in dark scope
+     (custom properties compute where declared, then inherit). */
+  --surface-page: var(--color-surface);
+  --surface-card: var(--color-surface-container-highest);
+  --border-hairline: var(--color-outline-variant);
+  --text-primary: var(--color-on-surface);
+  --text-secondary: color-mix(in srgb, var(--color-on-surface) 60%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-on-surface) 38%, transparent);
+  --text-on-brand: var(--color-on-primary);
+  --state-hover: color-mix(in srgb, var(--color-on-surface) 8%, transparent);
+  --state-press: color-mix(in srgb, var(--color-on-surface) 10%, transparent);
+  --disabled-fill: color-mix(in srgb, var(--color-on-surface) 12%, transparent);
+  --disabled-text: var(--text-tertiary);
+}

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="design_doc_mode" content="canvas">
+<title>Font exploration — Calm Material</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600&family=Albert+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&family=Lora:wght@500;600&family=Source+Sans+3:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&family=Doto:wght@600;700&family=Handjet:wght@500;600&family=Sixtyfour&family=Silkscreen:wght@400;700&family=Saira+Stencil+One&family=Space+Mono:wght@400;700&family=Unbounded:wght@500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .frame {
+    position: absolute;
+    width: 420px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 16px;
+    padding: 28px;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    font-family: var(--f-body, var(--font-ui));
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font: 500 12px/1 var(--font-ui);
+  }
+  .frame-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .frame-name { font: 600 16px/1.3 var(--font-ui); }
+  .frame-note {
+    font: 400 13px/1.45 var(--font-ui);
+    color: var(--text-secondary);
+    margin: 0 0 20px 0;
+  }
+  .ramp { display: flex; flex-direction: column; gap: 10px; }
+  .h-lg { font-family: var(--f-head); font-size: 32px; font-weight: 600; line-height: 1.25; letter-spacing: -0.5px; }
+  .h-md { font-family: var(--f-head); font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -0.5px; }
+  .title { font-family: var(--f-head); font-size: 18px; font-weight: 600; line-height: 1.25; }
+  .body-lg { font-family: var(--f-body); font-size: 16px; font-weight: 400; line-height: 1.5; }
+  .body-md { font-family: var(--f-body); font-size: 14px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+  .caption { font-family: var(--f-body); font-size: 12px; font-weight: 400; line-height: 1.35; color: var(--text-tertiary); }
+  .divider { height: 1px; background: var(--color-outline-variant); margin: 22px 0; }
+  .sample {
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kcal { display: flex; align-items: baseline; gap: 6px; }
+  .kcal-n { font-family: var(--f-head); font-size: 32px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.1; }
+  .kcal-u { font-family: var(--f-body); font-size: 14px; color: var(--text-secondary); }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 12px;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-family: var(--f-body);
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .btn.tonal {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+  }
+  /* Turn 2 — twist display font on headlines + big numbers only */
+  [data-turn="2"] .h-lg,
+  [data-turn="2"] .h-md,
+  [data-turn="2"] .kcal-n {
+    font-weight: var(--w-head, 600);
+    font-style: var(--s-head, normal);
+    letter-spacing: 0;
+  }
+  [data-turn="2"] .h-lg { font-size: 36px; }
+  [data-turn="2"] .kcal-n { font-size: 42px; }
+  [data-turn="2"] .title { font-family: var(--f-body); }
+</style>
+</head>
+<body>
+
+  <div class="frame" id="2a" style="left: 40px; top: 40px;" data-turn="2" data-screen-label="2a Doto + Hanken">
+    <div class="frame-head"><span class="badge">2a</span><span class="frame-name">Doto + Hanken Grotesk</span></div>
+    <p class="frame-note">True dot matrix headlines and big numbers; everything else stays quiet Hanken. The most literal take on your ask.</p>
+    <div class="ramp" style="--f-head: 'Doto'; --f-body: 'Hanken Grotesk'; --w-head: 700;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2b" style="left: 500px; top: 40px;" data-turn="2" data-screen-label="2b Handjet + Albert">
+    <div class="frame-head"><span class="badge">2b</span><span class="frame-name">Handjet + Albert Sans</span></div>
+    <p class="frame-note">Pixel-element display type, softer and denser than pure dots. Reads retro-digital without the arcade feel.</p>
+    <div class="ramp" style="--f-head: 'Handjet'; --f-body: 'Albert Sans'; --w-head: 600;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2c" style="left: 960px; top: 40px;" data-turn="2" data-screen-label="2c Sixtyfour + Hanken">
+    <div class="frame-head"><span class="badge">2c</span><span class="frame-name">Sixtyfour + Hanken Grotesk</span></div>
+    <p class="frame-note">LED-terminal dots — strongest for big numbers (kcal readout as a display panel). Use sparingly; headlines get loud.</p>
+    <div class="ramp" style="--f-head: 'Sixtyfour'; --f-body: 'Hanken Grotesk'; --w-head: 400;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2d" style="left: 1420px; top: 40px;" data-turn="2" data-screen-label="2d Silkscreen + Jakarta">
+    <div class="frame-head"><span class="badge">2d</span><span class="frame-name">Silkscreen + Plus Jakarta Sans</span></div>
+    <p class="frame-note">Chunky 8-bit pixels — the boldest, most playful twist. Game-like; furthest from calm.</p>
+    <div class="ramp" style="--f-head: 'Silkscreen'; --f-body: 'Plus Jakarta Sans'; --w-head: 700;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2e" style="left: 40px; top: 800px;" data-turn="2" data-screen-label="2e Saira Stencil + Hanken">
+    <div class="frame-head"><span class="badge">2e</span><span class="frame-name">Saira Stencil One + Hanken Grotesk</span></div>
+    <p class="frame-note">Stencil cuts instead of dots — industrial twist, still crisp at small headline sizes.</p>
+    <div class="ramp" style="--f-head: 'Saira Stencil One'; --f-body: 'Hanken Grotesk'; --w-head: 400;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2f" style="left: 500px; top: 800px;" data-turn="2" data-screen-label="2f Space Mono + Hanken">
+    <div class="frame-head"><span class="badge">2f</span><span class="frame-name">Space Mono + Hanken Grotesk</span></div>
+    <p class="frame-note">Subtlest twist: retro monospace headlines. Technical, readable, ages well.</p>
+    <div class="ramp" style="--f-head: 'Space Mono'; --f-body: 'Hanken Grotesk'; --w-head: 700;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2g" style="left: 960px; top: 800px;" data-turn="2" data-screen-label="2g Unbounded + Albert">
+    <div class="frame-head"><span class="badge">2g</span><span class="frame-name">Unbounded + Albert Sans</span></div>
+    <p class="frame-note">Wide techno curves — futuristic twist without pixels. Strong brand voice at hero sizes.</p>
+    <div class="ramp" style="--f-head: 'Unbounded'; --f-body: 'Albert Sans'; --w-head: 500;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="2h" style="left: 1420px; top: 800px;" data-turn="2" data-screen-label="2h Instrument Serif + Source Sans">
+    <div class="frame-head"><span class="badge">2h</span><span class="frame-name">Instrument Serif italic + Source Sans 3</span></div>
+    <p class="frame-note">A different kind of twist: elegant italic serif for headlines and highlight numbers only. Warm, editorial.</p>
+    <div class="ramp" style="--f-head: 'Instrument Serif'; --f-body: 'Source Sans 3'; --w-head: 400; --s-head: italic;">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1a" style="left: 40px; top: 1640px;" data-screen-label="1a System UI" data-comment-anchor="font-opt-baseline">
+    <div class="frame-head"><span class="badge">1a</span><span class="frame-name">System UI — current</span></div>
+    <p class="frame-note">Baseline for comparison. Native, invisible, zero personality by design.</p>
+    <div class="ramp" style="--f-head: var(--font-ui); --f-body: var(--font-ui);">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1b" style="left: 500px; top: 1640px;" data-screen-label="1b Hanken Grotesk">
+    <div class="frame-head"><span class="badge">1b</span><span class="frame-name">Hanken Grotesk</span></div>
+    <p class="frame-note">Warm humanist grotesque, one family for everything. The smallest step away from system — calmer, slightly friendlier.</p>
+    <div class="ramp" style="--f-head: 'Hanken Grotesk'; --f-body: 'Hanken Grotesk';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1c" style="left: 960px; top: 1640px;" data-screen-label="1c Plus Jakarta Sans">
+    <div class="frame-head"><span class="badge">1c</span><span class="frame-name">Plus Jakarta Sans</span></div>
+    <p class="frame-note">Geometric with rounded terminals — echoes the soft 12/16px corner language. Reads modern-product without shouting.</p>
+    <div class="ramp" style="--f-head: 'Plus Jakarta Sans'; --f-body: 'Plus Jakarta Sans';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1d" style="left: 1420px; top: 1640px;" data-screen-label="1d Schibsted + Albert">
+    <div class="frame-head"><span class="badge">1d</span><span class="frame-name">Schibsted Grotesk + Albert Sans</span></div>
+    <p class="frame-note">Headlines with a Scandinavian editorial voice; quiet Albert Sans body. The most "designed" pairing that still feels calm.</p>
+    <div class="ramp" style="--f-head: 'Schibsted Grotesk'; --f-body: 'Albert Sans';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1e" style="left: 40px; top: 2400px;" data-screen-label="1e Bricolage + Hanken">
+    <div class="frame-head"><span class="badge">1e</span><span class="frame-name">Bricolage Grotesque + Hanken Grotesk</span></div>
+    <p class="frame-note">Characterful headlines — tight, slightly quirky counters. Pushes the brand furthest from "native Google app".</p>
+    <div class="ramp" style="--f-head: 'Bricolage Grotesque'; --f-body: 'Hanken Grotesk';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1f" style="left: 500px; top: 2400px;" data-screen-label="1f Lora + Source Sans">
+    <div class="frame-head"><span class="badge">1f</span><span class="frame-name">Lora + Source Sans 3</span></div>
+    <p class="frame-note">Serif headlines, sans body — editorial and wellness-adjacent. Warmest option; furthest from Material convention.</p>
+    <div class="ramp" style="--f-head: 'Lora'; --f-body: 'Source Sans 3';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame" id="1g" style="left: 960px; top: 2400px;" data-screen-label="1g Space Grotesk">
+    <div class="frame-head"><span class="badge">1g</span><span class="frame-name">Space Grotesk + Hanken Grotesk</span></div>
+    <p class="frame-note">Technical headlines — great for numbers (kcal, grams). Leans instrument/quantified-self; coolest in tone.</p>
+    <div class="ramp" style="--f-head: 'Space Grotesk'; --f-body: 'Hanken Grotesk';">
+      <div class="h-lg">Scan a meal</div>
+      <div class="h-md">Today's summary</div>
+      <div class="title">Recent scans</div>
+      <div class="body-lg">Fill the frame with your plate and hold steady.</div>
+      <div class="body-md">Estimates improve after three scans.</div>
+      <div class="caption">Updated 12:24 pm</div>
+      <div class="divider"></div>
+      <div class="sample">
+        <div class="caption">Lunch · 12:24 pm</div>
+        <div class="kcal"><span class="kcal-n">642</span><span class="kcal-u">kcal</span></div>
+        <div class="body-md">Grilled salmon, quinoa, greens</div>
+        <div class="btn-row"><span class="btn">Scan a meal</span><span class="btn tonal">History</span></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
