@@ -24,6 +24,26 @@
     <string name="action_open">Open</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_go">Go</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_search">Search</string>
+    <string name="action_bookmark">Bookmark this page</string>
+    <string name="action_more">More options</string>
+    <string name="action_read_aloud">Read aloud</string>
+    <string name="action_stop_reading">Stop reading</string>
+    <string name="action_reading_mode">Day / night / sepia</string>
+    <string name="action_view_mode">Vertical / horizontal</string>
+    <string name="action_share">Share</string>
+    <string name="action_print">Print</string>
+
+    <string name="search_hint">Search in document</string>
+    <string name="search_prev">Previous match</string>
+    <string name="search_next">Next match</string>
+
+    <string name="outline_title">Contents</string>
+    <string name="outline_empty">This document has no table of contents</string>
+    <string name="outline_untitled">Untitled</string>
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_empty">No bookmarks yet — tap the bookmark icon while reading</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_appearance">Appearance</string>

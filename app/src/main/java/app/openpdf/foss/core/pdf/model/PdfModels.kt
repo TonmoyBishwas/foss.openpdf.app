@@ -11,3 +11,23 @@ data class OutlineNode(
     val pageIndex: Int,
     val children: List<OutlineNode> = emptyList(),
 )
+
+/** Axis-aligned rectangle in normalized page coordinates (0..1, top-left origin). */
+data class NormalizedRect(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+)
+
+/** One search match on a page. */
+data class SearchHit(
+    val pageIndex: Int,
+    val rects: List<NormalizedRect>,
+)
+
+/** A text selection on a page: the text and the rects that cover it. */
+data class TextSelection(
+    val text: String,
+    val rects: List<NormalizedRect>,
+)

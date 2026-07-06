@@ -3,6 +3,8 @@ package app.openpdf.foss.core.pdf
 import android.graphics.Bitmap
 import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
+import app.openpdf.foss.core.pdf.model.SearchHit
+import app.openpdf.foss.core.pdf.model.TextSelection
 
 /** Thrown when a document is encrypted and no/wrong password was supplied. */
 class PdfPasswordRequiredException(val wrongPasswordSupplied: Boolean) : Exception()
@@ -42,6 +44,24 @@ interface PdfDocumentSession : AutoCloseable {
 
     /** Document outline (table of contents); empty when the PDF has none. */
     suspend fun outline(): List<OutlineNode>
+
+    /** All matches of [query] on [pageIndex]; rects are normalized 0..1 page coords. */
+    suspend fun search(pageIndex: Int, query: String): List<SearchHit>
+
+    /** Plain text of the page (reading order), for TTS and clipboard. */
+    suspend fun pageText(pageIndex: Int): String
+
+    /**
+     * Word-snapped text selection between two points in normalized 0..1 page
+     * coordinates (top-left origin). Null when there is no text there.
+     */
+    suspend fun selectText(
+        pageIndex: Int,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+    ): TextSelection?
 
     override fun close()
 }

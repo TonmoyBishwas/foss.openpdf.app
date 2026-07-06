@@ -5,11 +5,18 @@ import app.openpdf.foss.core.pdf.PdfDocumentSession
 import app.openpdf.foss.core.pdf.PdfEngine
 import app.openpdf.foss.core.pdf.PdfOpenException
 import app.openpdf.foss.core.pdf.PdfPasswordRequiredException
+import app.openpdf.foss.core.pdf.model.NormalizedRect
 import app.openpdf.foss.core.pdf.model.OutlineNode
 import app.openpdf.foss.core.pdf.model.PageSize
+import app.openpdf.foss.core.pdf.model.SearchHit
+import app.openpdf.foss.core.pdf.model.TextSelection
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.Outline
+import com.artifex.mupdf.fitz.Page
+import com.artifex.mupdf.fitz.Point
+import com.artifex.mupdf.fitz.Quad
+import com.artifex.mupdf.fitz.StructuredText
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -85,6 +92,89 @@ internal class MuPdfSession(
                 page.destroy()
             }
         }
+
+    override suspend fun search(pageIndex: Int, query: String): List<SearchHit> =
+        withContext(dispatcher) {
+            withPage(pageIndex) { page ->
+                val bounds = page.bounds
+                val hits: Array<Array<Quad>> = page.search(query) ?: return@withPage emptyList()
+                hits.map { quads ->
+                    SearchHit(
+                        pageIndex = pageIndex,
+                        rects = quads.map { it.toNormalizedRect(bounds) },
+                    )
+                }
+            }
+        }
+
+    override suspend fun pageText(pageIndex: Int): String = withContext(dispatcher) {
+        withPage(pageIndex) { page ->
+            val structured = page.toStructuredText()
+            try {
+                structured.copy(
+                    Point(page.bounds.x0, page.bounds.y0),
+                    Point(page.bounds.x1, page.bounds.y1),
+                ) ?: ""
+            } finally {
+                structured.destroy()
+            }
+        }
+    }
+
+    override suspend fun selectText(
+        pageIndex: Int,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+    ): TextSelection? = withContext(dispatcher) {
+        withPage(pageIndex) { page ->
+            val bounds = page.bounds
+            val width = bounds.x1 - bounds.x0
+            val height = bounds.y1 - bounds.y0
+            val a = Point(bounds.x0 + startX * width, bounds.y0 + startY * height)
+            val b = Point(bounds.x0 + endX * width, bounds.y0 + endY * height)
+            val structured = page.toStructuredText()
+            try {
+                val quads = structured.highlight(a, b) ?: emptyArray()
+                val text = structured.copy(a, b) ?: ""
+                if (text.isBlank() || quads.isEmpty()) {
+                    null
+                } else {
+                    TextSelection(
+                        text = text,
+                        rects = quads.map { it.toNormalizedRect(bounds) },
+                    )
+                }
+            } finally {
+                structured.destroy()
+            }
+        }
+    }
+
+    private inline fun <T> withPage(pageIndex: Int, block: (Page) -> T): T {
+        val page = document.loadPage(pageIndex)
+        try {
+            return block(page)
+        } finally {
+            page.destroy()
+        }
+    }
+
+    private fun Quad.toNormalizedRect(bounds: com.artifex.mupdf.fitz.Rect): NormalizedRect {
+        val width = bounds.x1 - bounds.x0
+        val height = bounds.y1 - bounds.y0
+        val left = minOf(ul_x, ll_x)
+        val right = maxOf(ur_x, lr_x)
+        val top = minOf(ul_y, ur_y)
+        val bottom = maxOf(ll_y, lr_y)
+        return NormalizedRect(
+            left = ((left - bounds.x0) / width).coerceIn(0f, 1f),
+            top = ((top - bounds.y0) / height).coerceIn(0f, 1f),
+            right = ((right - bounds.x0) / width).coerceIn(0f, 1f),
+            bottom = ((bottom - bounds.y0) / height).coerceIn(0f, 1f),
+        )
+    }
 
     override suspend fun outline(): List<OutlineNode> = withContext(dispatcher) {
         document.loadOutline()?.map { it.toNode() } ?: emptyList()

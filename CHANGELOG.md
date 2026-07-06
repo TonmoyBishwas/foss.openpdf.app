@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.0
+
+- Full-text search with match highlighting and previous/next navigation
+- Table of contents (outline) and per-document bookmarks
+- Text selection by long-press drag, with copy to clipboard
+- Night and sepia reading modes
+- Horizontal page-by-page mode alongside vertical scroll
+- Read aloud with on-device text-to-speech (auto-advances pages)
+- Share and print
+
 ## v0.1.0
 
 - PDF viewer MVP powered by MuPDF: open PDFs from the file picker or from
