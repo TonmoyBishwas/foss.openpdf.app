@@ -120,5 +120,20 @@ interface PdfDocumentSession : AutoCloseable {
      */
     suspend fun exportArrangement(order: List<Int>, rotations: Map<Int, Int>, outFilePath: String)
 
+    /** Writes an AES-256 encrypted copy to [filePath]. */
+    suspend fun saveEncrypted(filePath: String, userPassword: String, ownerPassword: String)
+
+    /** Writes an unencrypted copy to [filePath] (document must be open/authenticated). */
+    suspend fun saveDecrypted(filePath: String)
+
+    /** Whether the document was encrypted when opened. */
+    val isEncrypted: Boolean
+
+    /** Document info metadata (title, author, subject, keywords, ...). */
+    suspend fun metadata(): Map<String, String>
+
+    /** Sets Info-dictionary entries; keys as in [metadata]. Marks the doc dirty. */
+    suspend fun setMetadata(values: Map<String, String>)
+
     override fun close()
 }

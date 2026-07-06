@@ -78,6 +78,17 @@
     <string name="scan_black_white">Black &amp; white</string>
     <string name="scan_add_page">Add page</string>
     <string name="scan_done">Create PDF</string>
+    <string name="action_protect">Password protect</string>
+    <string name="action_remove_password">Remove password</string>
+    <string name="action_document_info">Document info</string>
+    <string name="protect_dialog_title">Password protect</string>
+    <string name="protect_dialog_hint">Saves an encrypted copy (AES-256). Anyone opening it will need this password.</string>
+    <string name="protect_confirm_label">Confirm password</string>
+    <string name="meta_title">Title</string>
+    <string name="meta_author">Author</string>
+    <string name="meta_subject">Subject</string>
+    <string name="meta_keywords">Keywords</string>
+    <string name="meta_producer">Producer: %1$s</string>
     <string name="split_dialog_title">Extract pages</string>
     <string name="split_dialog_hint">Document has %1$d pages. Enter pages like 1-3, 7, 9-12.</string>
     <string name="split_dialog_label">Pages</string>

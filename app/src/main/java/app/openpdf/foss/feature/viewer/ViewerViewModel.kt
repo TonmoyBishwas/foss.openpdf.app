@@ -479,6 +479,63 @@ class ViewerViewModel @Inject constructor(
         _annotationState.update { it.copy(saveError = null) }
     }
 
+    // --- Protect & metadata ---
+
+    val isEncrypted: Boolean get() = session?.isEncrypted == true
+
+    fun protectTo(target: Uri, password: String) {
+        val currentSession = session ?: return
+        _annotationState.update { it.copy(saving = true, saveError = null) }
+        viewModelScope.launch {
+            try {
+                documentSaver.saveWith(target) { tempPath ->
+                    currentSession.saveEncrypted(tempPath, password, password)
+                }
+                _annotationState.update { it.copy(saving = false, savedTick = it.savedTick + 1) }
+            } catch (e: Exception) {
+                _annotationState.update {
+                    it.copy(saving = false, saveError = e.message ?: "Protect failed")
+                }
+            }
+        }
+    }
+
+    fun removePasswordTo(target: Uri) {
+        val currentSession = session ?: return
+        _annotationState.update { it.copy(saving = true, saveError = null) }
+        viewModelScope.launch {
+            try {
+                documentSaver.saveWith(target) { tempPath ->
+                    currentSession.saveDecrypted(tempPath)
+                }
+                _annotationState.update { it.copy(saving = false, savedTick = it.savedTick + 1) }
+            } catch (e: Exception) {
+                _annotationState.update {
+                    it.copy(saving = false, saveError = e.message ?: "Could not remove password")
+                }
+            }
+        }
+    }
+
+    private val _metadata = MutableStateFlow<Map<String, String>>(emptyMap())
+    val metadata: StateFlow<Map<String, String>> = _metadata.asStateFlow()
+
+    fun loadMetadata() {
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            _metadata.value = runCatching { currentSession.metadata() }.getOrDefault(emptyMap())
+        }
+    }
+
+    fun updateMetadata(values: Map<String, String>) {
+        val currentSession = session ?: return
+        viewModelScope.launch {
+            currentSession.setMetadata(values)
+            _annotationState.update { it.copy(dirty = true) }
+            _metadata.value = runCatching { currentSession.metadata() }.getOrDefault(emptyMap())
+        }
+    }
+
     // --- Text selection ---
 
     private var selectionJob: Job? = null

@@ -108,6 +108,17 @@ fun ViewerScreen(
     var notePlacement by remember { mutableStateOf<Triple<Int, Float, Float>?>(null) }
     var textPlacement by remember { mutableStateOf<Triple<Int, Float, Float>?>(null) }
     var showSignaturePad by remember { mutableStateOf(false) }
+    var showProtectDialog by remember { mutableStateOf(false) }
+    var showMetadataDialog by remember { mutableStateOf(false) }
+    var protectPassword by remember { mutableStateOf("") }
+
+    val protectLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target -> target?.let { viewModel.protectTo(it, protectPassword) } }
+
+    val removePasswordLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { target -> target?.let(viewModel::removePasswordTo) }
     var formFieldEditing by remember { mutableStateOf<app.openpdf.foss.core.pdf.model.FormField?>(null) }
     val formFields by viewModel.formFields.collectAsStateWithLifecycle()
 
@@ -178,6 +189,17 @@ fun ViewerScreen(
                     },
                     annotateActive = annotationState.toolbarVisible,
                     onOrganize = { onOrganize(viewModel.uri.toString()) },
+                    onProtect = { showProtectDialog = true },
+                    onRemovePassword = if (viewModel.isEncrypted) {
+                        {
+                            val name = (uiState as? ViewerUiState.Ready)?.displayName ?: "document.pdf"
+                            removePasswordLauncher.launch(name)
+                        }
+                    } else null,
+                    onDocumentInfo = {
+                        viewModel.loadMetadata()
+                        showMetadataDialog = true
+                    },
                 )
             }
         },
@@ -341,6 +363,29 @@ fun ViewerScreen(
                         )
                     }
 
+                    if (showProtectDialog) {
+                        ProtectDialog(
+                            onConfirm = { password ->
+                                protectPassword = password
+                                showProtectDialog = false
+                                protectLauncher.launch("protected-${state.displayName}")
+                            },
+                            onDismiss = { showProtectDialog = false },
+                        )
+                    }
+
+                    if (showMetadataDialog) {
+                        val metadata by viewModel.metadata.collectAsStateWithLifecycle()
+                        MetadataDialog(
+                            metadata = metadata,
+                            onSave = { values ->
+                                viewModel.updateMetadata(values)
+                                showMetadataDialog = false
+                            },
+                            onDismiss = { showMetadataDialog = false },
+                        )
+                    }
+
                     formFieldEditing?.let { field ->
                         FormFieldDialog(
                             field = field,
@@ -480,6 +525,9 @@ private fun ViewerTopBar(
     onAnnotate: () -> Unit,
     annotateActive: Boolean,
     onOrganize: () -> Unit,
+    onProtect: () -> Unit,
+    onRemovePassword: (() -> Unit)?,
+    onDocumentInfo: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -589,6 +637,20 @@ private fun ViewerTopBar(
                             text = { Text(stringResource(R.string.action_print)) },
                             onClick = onPrint,
                         )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_protect)) },
+                            onClick = { onMenuDismiss(); onProtect() },
+                        )
+                        if (onRemovePassword != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_remove_password)) },
+                                onClick = { onMenuDismiss(); onRemovePassword() },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_document_info)) },
+                            onClick = { onMenuDismiss(); onDocumentInfo() },
+                        )
                     }
                 }
             }
@@ -672,6 +734,113 @@ private fun printDocument(context: Context, viewModel: ViewerViewModel) {
     val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
     val name = file.name.ifBlank { "document.pdf" }
     printManager.print(name, PdfPrintAdapter(file, name), null)
+}
+
+@Composable
+private fun ProtectDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirm by rememberSaveable { mutableStateOf("") }
+    val valid = password.isNotEmpty() && password == confirm
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.protect_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(
+                    text = stringResource(R.string.protect_dialog_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.password_dialog_label)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = confirm,
+                    onValueChange = { confirm = it },
+                    label = { Text(stringResource(R.string.protect_confirm_label)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    isError = confirm.isNotEmpty() && confirm != password,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(password) }, enabled = valid) {
+                Text(stringResource(R.string.action_protect))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun MetadataDialog(
+    metadata: Map<String, String>,
+    onSave: (Map<String, String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var title by remember(metadata) { mutableStateOf(metadata["Title"] ?: "") }
+    var author by remember(metadata) { mutableStateOf(metadata["Author"] ?: "") }
+    var subject by remember(metadata) { mutableStateOf(metadata["Subject"] ?: "") }
+    var keywords by remember(metadata) { mutableStateOf(metadata["Keywords"] ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.action_document_info)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                OutlinedTextField(
+                    value = title, onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.meta_title)) }, singleLine = true,
+                )
+                OutlinedTextField(
+                    value = author, onValueChange = { author = it },
+                    label = { Text(stringResource(R.string.meta_author)) }, singleLine = true,
+                )
+                OutlinedTextField(
+                    value = subject, onValueChange = { subject = it },
+                    label = { Text(stringResource(R.string.meta_subject)) }, singleLine = true,
+                )
+                OutlinedTextField(
+                    value = keywords, onValueChange = { keywords = it },
+                    label = { Text(stringResource(R.string.meta_keywords)) }, singleLine = true,
+                )
+                metadata["Producer"]?.let {
+                    Text(
+                        text = stringResource(R.string.meta_producer, it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(
+                        mapOf(
+                            "Title" to title,
+                            "Author" to author,
+                            "Subject" to subject,
+                            "Keywords" to keywords,
+                        )
+                    )
+                },
+            ) { Text(stringResource(R.string.action_apply)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

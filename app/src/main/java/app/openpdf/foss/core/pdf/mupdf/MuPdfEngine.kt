@@ -69,7 +69,8 @@ class MuPdfEngine @Inject constructor() : PdfEngine {
             } catch (e: Exception) {
                 throw PdfOpenException("Cannot open PDF: ${e.message}", e)
             }
-            if (document.needsPassword()) {
+            val encrypted = document.needsPassword()
+            if (encrypted) {
                 if (password == null) {
                     document.destroy()
                     throw PdfPasswordRequiredException(wrongPasswordSupplied = false)
@@ -79,7 +80,7 @@ class MuPdfEngine @Inject constructor() : PdfEngine {
                     throw PdfPasswordRequiredException(wrongPasswordSupplied = true)
                 }
             }
-            MuPdfSession(document, dispatcher)
+            MuPdfSession(document, dispatcher, encrypted)
         }
     }
 }
@@ -87,6 +88,7 @@ class MuPdfEngine @Inject constructor() : PdfEngine {
 internal class MuPdfSession(
     private val document: Document,
     private val dispatcher: CoroutineDispatcher,
+    override val isEncrypted: Boolean = false,
 ) : PdfDocumentSession {
 
     override val pageCount: Int = document.countPages()
@@ -473,6 +475,50 @@ internal class MuPdfSession(
         val pdf = document as? PDFDocument ?: error("Document is not editable")
         pdf.save(filePath, "compress")
     }
+
+    override suspend fun saveEncrypted(
+        filePath: String,
+        userPassword: String,
+        ownerPassword: String,
+    ): Unit = withContext(dispatcher) {
+        val pdf = document as? PDFDocument ?: error("Document is not editable")
+        // Commas would break MuPDF's option string; strip them defensively.
+        val user = userPassword.replace(",", "")
+        val owner = ownerPassword.replace(",", "").ifEmpty { user }
+        pdf.save(
+            filePath,
+            "compress,encrypt=aes-256,user-password=$user,owner-password=$owner",
+        )
+    }
+
+    override suspend fun saveDecrypted(filePath: String): Unit = withContext(dispatcher) {
+        val pdf = document as? PDFDocument ?: error("Document is not editable")
+        pdf.save(filePath, "compress,encrypt=none")
+    }
+
+    private val metaKeys = mapOf(
+        "Title" to Document.META_INFO_TITLE,
+        "Author" to Document.META_INFO_AUTHOR,
+        "Subject" to Document.META_INFO_SUBJECT,
+        "Keywords" to Document.META_INFO_KEYWORDS,
+        "Creator" to Document.META_INFO_CREATOR,
+        "Producer" to Document.META_INFO_PRODUCER,
+    )
+
+    override suspend fun metadata(): Map<String, String> = withContext(dispatcher) {
+        metaKeys.mapValues { (_, key) ->
+            runCatching { document.getMetaData(key) }.getOrNull() ?: ""
+        }.filterValues { it.isNotEmpty() }
+    }
+
+    override suspend fun setMetadata(values: Map<String, String>): Unit =
+        withContext(dispatcher) {
+            values.forEach { (name, value) ->
+                metaKeys[name]?.let { key ->
+                    runCatching { document.setMetaData(key, value) }
+                }
+            }
+        }.also { markMutated() }
 
     override suspend fun exportArrangement(
         order: List<Int>,
