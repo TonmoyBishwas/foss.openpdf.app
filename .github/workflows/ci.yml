@@ -29,8 +29,11 @@ jobs:
 
       - name: Check 64-bit native libs are 16KB page aligned
         # Play's 16KB page-size requirement applies to 64-bit libraries only.
+        # ABI splits produce app-universal-debug.apk (no plain app-debug.apk).
         run: |
-          APK=app/build/outputs/apk/debug/app-debug.apk
+          APK=$(ls app/build/outputs/apk/debug/app-universal-debug.apk \
+                   app/build/outputs/apk/debug/app-debug.apk 2>/dev/null | head -1)
+          echo "Checking $APK"
           mkdir -p /tmp/apk && unzip -o -q "$APK" -d /tmp/apk
           [ -d /tmp/apk/lib ] || { echo "no native libs"; exit 0; }
           FAIL=0
@@ -48,4 +51,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-universal-debug.apk

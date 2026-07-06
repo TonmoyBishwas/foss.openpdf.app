@@ -180,6 +180,12 @@ class ViewerViewModel @Inject constructor(
                 refreshFormFields()
             } catch (e: PdfPasswordRequiredException) {
                 _uiState.value = ViewerUiState.PasswordRequired(e.wrongPasswordSupplied)
+            } catch (e: app.openpdf.foss.core.files.SafFileManager.PermissionLostException) {
+                // The stale recent entry is useless now — drop it.
+                recents.remove(uri.toString())
+                _uiState.value = ViewerUiState.Error(
+                    "Access to this file was lost. Open it again from your files to restore access."
+                )
             } catch (e: Exception) {
                 _uiState.value = ViewerUiState.Error(e.message ?: "Could not open PDF")
             }

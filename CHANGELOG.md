@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0
+
+First stable release. OpenPDF is a complete, free, offline PDF reader and
+editor: viewing with search/outline/bookmarks/night mode/read-aloud,
+annotations written into the file, fill & sign, page organization, PDF
+creation, and AES-256 protection.
+
+- Clearer, actionable message when a file's access permission was revoked
+  (e.g. after reinstalling); the stale recent entry is removed automatically
+- Store listing assets, screenshots, and F-Droid metadata included
+- Polished README and About screen
+
 ## v0.8.0
 
 - Faster viewing: pages show an instant low-res preview, then sharpen — no

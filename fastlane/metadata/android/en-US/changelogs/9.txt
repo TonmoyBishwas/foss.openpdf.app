@@ -1,0 +1,4 @@
+First stable release. A complete, free, offline PDF reader and editor: view,
+search, read aloud, annotate (saved into the file), fill & sign, organize pages,
+merge/split, create from images/scans/text, and AES-256 password protection.
+Clearer handling when a file's access permission was revoked.

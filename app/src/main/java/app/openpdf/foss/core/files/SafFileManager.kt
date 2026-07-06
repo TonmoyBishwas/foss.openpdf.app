@@ -55,18 +55,28 @@ class SafFileManager @Inject constructor(
      * into the app's cache. The copy is keyed by URI hash and reused while the
      * source is unchanged in size.
      */
+    /** Thrown when a document's access permission is no longer granted. */
+    class PermissionLostException : Exception("Permission to open this file was lost")
+
     suspend fun materialize(uri: Uri): File = withContext(Dispatchers.IO) {
         if (uri.scheme == "file") return@withContext File(requireNotNull(uri.path))
 
-        val dir = File(context.cacheDir, "open").apply { mkdirs() }
-        val target = File(dir, "${uri.toString().hashCode().toUInt()}.pdf")
-        val sourceSize = context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
-        if (target.exists() && sourceSize > 0 && target.length() == sourceSize) {
-            return@withContext target
+        try {
+            val dir = File(context.cacheDir, "open").apply { mkdirs() }
+            val target = File(dir, "${uri.toString().hashCode().toUInt()}.pdf")
+            val sourceSize = context.contentResolver
+                .openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+            if (target.exists() && sourceSize > 0 && target.length() == sourceSize) {
+                return@withContext target
+            }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: throw IllegalStateException("Cannot read this file")
+            target
+        } catch (e: SecurityException) {
+            // The persisted URI grant was revoked (e.g. the app was reinstalled,
+            // or the user cleared it). Surface a friendly, actionable error.
+            throw PermissionLostException()
         }
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw IllegalStateException("Cannot read $uri")
-        target
     }
 }
