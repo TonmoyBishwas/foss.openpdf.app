@@ -35,7 +35,7 @@ jobs:
           [ -d /tmp/apk/lib ] || { echo "no native libs"; exit 0; }
           FAIL=0
           for so in $(find /tmp/apk/lib/arm64-v8a /tmp/apk/lib/x86_64 -name '*.so' 2>/dev/null); do
-            ALIGN=$(readelf -l "$so" | awk '/LOAD/ {print $NF}' | sort -u | tail -1)
+            ALIGN=$(readelf -lW "$so" | awk '/LOAD/ {print $NF}' | sort -u | tail -1)
             echo "$so align=$ALIGN"
             case "$ALIGN" in
               0x4000|0x10000) ;;

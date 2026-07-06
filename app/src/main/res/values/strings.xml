@@ -6,6 +6,25 @@
     <string name="home_empty_title">No documents yet</string>
     <string name="home_empty_subtitle">PDFs you open will show up here</string>
 
+    <string name="home_open_pdf">Open PDF</string>
+    <string name="home_recent_subtitle">%1$s · %2$s</string>
+    <plurals name="page_count">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <string name="home_remove_recent">Remove from recents</string>
+
+    <string name="viewer_page_indicator">%1$d / %2$d</string>
+    <string name="viewer_error_title">Can\'t open this PDF</string>
+    <string name="password_dialog_title">Password required</string>
+    <string name="password_dialog_label">Password</string>
+    <string name="password_dialog_wrong">Wrong password, try again</string>
+    <string name="go_to_page_title">Go to page</string>
+    <string name="go_to_page_label">Page (1–%1$d)</string>
+    <string name="action_open">Open</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_go">Go</string>
+
     <string name="settings_title">Settings</string>
     <string name="settings_appearance">Appearance</string>
     <string name="theme_system">Follow system</string>

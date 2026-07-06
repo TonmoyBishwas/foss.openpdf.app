@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.0
+
+- PDF viewer MVP powered by MuPDF: open PDFs from the file picker or from
+  other apps (ACTION_VIEW / share), continuous scroll, pinch and double-tap
+  zoom, go-to-page, page indicator
+- Password-protected PDFs supported with retry dialog
+- Recent files on Home with page count, last-opened time, and resume at last page
+- Keep-screen-on while reading
+
 ## v0.0.1
 
 - Project scaffold: Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore
