@@ -109,7 +109,9 @@
     <string name="about_version">Version %1$s</string>
     <string name="about_tagline">A free, open-source PDF reader and editor. No ads, no accounts, no tracking.</string>
     <string name="about_privacy">OpenPDF has no internet permission — your documents never leave your device.</string>
+    <string name="about_privacy_url">https://tonmoybishwas.github.io/foss.openpdf.app/privacy-policy.html</string>
     <string name="about_source">Source code on GitHub</string>
+    <string name="about_privacy_link">Privacy policy</string>
     <string name="about_licenses">Open-source licenses</string>
     <string name="licenses_intro">OpenPDF is built on these open-source components:</string>
     <string name="theme_system">Follow system</string>

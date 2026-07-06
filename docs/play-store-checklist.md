@@ -23,7 +23,7 @@ signed AAB is attached to every GitHub release.
       sign, organize, scan/create, search, home). Capture on a device/emulator.
 
 ## Policy
-- [ ] **Privacy policy URL:** https://tonmoybishwas.github.io/foss.openpdf.app/privacy-policy
+- [ ] **Privacy policy URL:** https://tonmoybishwas.github.io/foss.openpdf.app/privacy-policy.html
 - [ ] **Data safety form:** "No data collected", "No data shared". No INTERNET
       permission → nothing to declare for transit encryption.
 - [ ] Content rating questionnaire → Everyone

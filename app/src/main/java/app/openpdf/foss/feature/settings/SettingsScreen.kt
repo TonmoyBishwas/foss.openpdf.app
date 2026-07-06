@@ -169,6 +169,11 @@ fun SettingsScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     AboutLink(
+                        label = stringResource(R.string.about_privacy_link),
+                        onClick = { openUrl(context, context.getString(R.string.about_privacy_url)) },
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    AboutLink(
                         label = stringResource(R.string.about_licenses),
                         onClick = { showLicenses = true },
                     )

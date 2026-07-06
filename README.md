@@ -26,7 +26,7 @@ Grab the latest APK from the [**Releases**](https://github.com/TonmoyBishwas/fos
 
 ## Privacy
 
-OpenPDF requests **no internet permission** — it is technically incapable of sending your documents anywhere. No analytics, no telemetry, no accounts. It only opens files you explicitly pick, and only writes where you tell it to. See the [privacy policy](https://tonmoybishwas.github.io/foss.openpdf.app/privacy-policy).
+OpenPDF requests **no internet permission** — it is technically incapable of sending your documents anywhere. No analytics, no telemetry, no accounts. It only opens files you explicitly pick, and only writes where you tell it to. See the [privacy policy](https://tonmoybishwas.github.io/foss.openpdf.app/privacy-policy.html).
 
 ## Screenshots
 
