@@ -18,7 +18,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 8
-        versionName = "0.7.0"
+        versionName = "0.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -60,10 +60,45 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+
+    // Per-ABI APK splits so GitHub-release downloads only carry the native
+    // libraries (MuPDF ≈ 10 MB/ABI) for the user's device. A universal APK is
+    // still built as a works-everywhere fallback. The AAB does its own
+    // splitting, so ABI splits must be OFF when a bundle task is requested.
+    splits {
+        abi {
+            val buildingBundle = gradle.startParameter.taskNames.any {
+                it.contains("bundle", ignoreCase = true)
+            }
+            isEnable = !buildingBundle
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+        }
+    }
+}
+
+// Give each ABI split a distinct versionCode so Play/updaters order them
+// correctly (universal keeps the base code).
+androidComponents {
+    onVariants { variant ->
+        val abiCodes = mapOf("armeabi-v7a" to 1, "x86_64" to 2, "arm64-v8a" to 3)
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find {
+                it.filterType.toString() == "ABI"
+            }?.identifier
+            val base = output.versionCode.get() ?: 0
+            abiCodes[abi]?.let { offset ->
+                output.versionCode.set(base * 10 + offset)
+            }
         }
     }
 }

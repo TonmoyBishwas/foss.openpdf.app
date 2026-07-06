@@ -1,0 +1,4 @@
+Performance and polish: progressive page rendering (instant low-res preview,
+then sharp), a memory cap that prevents crashes when zooming large pages, and
+smaller per-ABI download APKs. Added an About screen with version and
+open-source license notices.

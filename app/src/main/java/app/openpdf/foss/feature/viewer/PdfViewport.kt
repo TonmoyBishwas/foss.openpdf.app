@@ -169,7 +169,7 @@ private fun VerticalViewport(
         }
 
         val renderZoom = (zoom * 2).roundToInt().coerceAtLeast(2) / 2f
-        val renderWidthPx = (viewportWidthPx * renderZoom).roundToInt()
+        val renderWidthPx = PageBitmapCache.clampWidth((viewportWidthPx * renderZoom).roundToInt())
 
         Box(
             modifier = Modifier
@@ -283,11 +283,24 @@ private fun PdfPageItem(
     onInkStroke: (Int, InkStroke) -> Unit,
     onShapeDrawn: (Int, NormalizedRect) -> Unit,
 ) {
+    // Progressive rendering: show any already-cached bitmap (a preview or an
+    // earlier zoom level) immediately, then swap in the sharp render when ready
+    // so scrolling/zooming never shows blank pages.
     val bitmap by produceState<Bitmap?>(
-        initialValue = null, session, pageIndex, renderWidthPx, docVersion,
+        initialValue = PageBitmapCache.peek(session, pageIndex, renderWidthPx)
+            ?: PageBitmapCache.peek(session, pageIndex, PageBitmapCache.PREVIEW_WIDTH),
+        session, pageIndex, renderWidthPx, docVersion,
     ) {
-        value = runCatching { PageBitmapCache.getOrRender(session, pageIndex, renderWidthPx) }
-            .getOrNull()
+        if (value == null) {
+            // Fast low-res pass first for instant feedback.
+            value = runCatching {
+                PageBitmapCache.getOrRender(session, pageIndex, PageBitmapCache.PREVIEW_WIDTH)
+            }.getOrNull()
+        }
+        val sharp = runCatching {
+            PageBitmapCache.getOrRender(session, pageIndex, renderWidthPx)
+        }.getOrNull()
+        if (sharp != null) value = sharp
     }
     var liveStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
 

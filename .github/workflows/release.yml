@@ -26,20 +26,38 @@ jobs:
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
 
-      - name: Build signed APK and AAB
+      # Two separate Gradle invocations: ABI splits are enabled for the APK
+      # build and auto-disabled for the bundle (they can't coexist with an AAB).
+      - name: Build signed APKs (per-ABI + universal)
         env:
           OPENPDF_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           OPENPDF_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           OPENPDF_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           export OPENPDF_KEYSTORE="$RUNNER_TEMP/release.jks"
-          ./gradlew assembleRelease bundleRelease
+          ./gradlew assembleRelease
 
-      - name: Rename artifacts
+      - name: Build signed AAB for Play
+        env:
+          OPENPDF_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          OPENPDF_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          OPENPDF_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          export OPENPDF_KEYSTORE="$RUNNER_TEMP/release.jks"
+          ./gradlew bundleRelease
+
+      - name: Collect artifacts
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          cp app/build/outputs/apk/release/app-release.apk "OpenPDF-${VERSION}.apk"
+          # Universal (works-everywhere) APK + AAB for Play.
+          cp app/build/outputs/apk/release/app-universal-release.apk "OpenPDF-${VERSION}.apk"
           cp app/build/outputs/bundle/release/app-release.aab "OpenPDF-${VERSION}.aab"
+          # Per-ABI APKs (smaller downloads).
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="app/build/outputs/apk/release/app-${abi}-release.apk"
+            [ -f "$src" ] && cp "$src" "OpenPDF-${VERSION}-${abi}.apk"
+          done
+          ls -la OpenPDF-*.apk OpenPDF-*.aab
 
       - name: Extract changelog for this version
         run: |

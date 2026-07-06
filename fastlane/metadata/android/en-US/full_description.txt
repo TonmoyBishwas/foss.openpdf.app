@@ -1,0 +1,25 @@
+OpenPDF is a completely free and open-source PDF app — a full alternative to
+proprietary readers, including the features they usually lock behind a
+subscription. There are no ads, no accounts, no subscriptions, and no tracking.
+
+OpenPDF has no internet permission at all: your documents never leave your
+device.
+
+Features:
+
+* View: fast rendering, pinch and double-tap zoom, continuous scroll and
+  page-by-page modes, night and sepia reading modes
+* Navigate: table of contents, bookmarks, go-to-page, full-text search
+* Listen: read aloud with on-device text-to-speech
+* Annotate (saved into the PDF): highlight, underline, strikethrough, sticky
+  notes, freehand drawing, text boxes, shapes, and an eraser
+* Fill & sign: fill interactive form fields and place your signature
+* Organize: rotate, reorder, duplicate, delete, and extract pages; merge and
+  split PDFs
+* Create: make PDFs from images, camera scans (with a black & white filter), or
+  typed text
+* Protect: add or remove an AES-256 password, and view or edit document metadata
+* Share and print
+
+OpenPDF only opens files you explicitly choose, and only writes where you tell
+it to. Nothing is uploaded, indexed, or collected.

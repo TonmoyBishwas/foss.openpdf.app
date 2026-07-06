@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.8.0
+
+- Faster viewing: pages show an instant low-res preview, then sharpen — no
+  more blank pages while scrolling or zooming
+- Fixed a crash when zooming deep into large pages (render size is now capped)
+- Smaller downloads: per-ABI release APKs (plus a universal one)
+- New About screen: version, privacy statement, source link, and open-source
+  license notices
+
 ## v0.7.0
 
 - Password protect: save an AES-256 encrypted copy of any document
